@@ -11,19 +11,19 @@ import scipy.stats as st
 from ssm.input_selection import input_selection
 from ssm.util import one_hot, find_permutation, permute_params
 
-# * * * os dirs * * *
-root = os.path.dirname(os.path.abspath(__file__))
-output_dir = os.path.join(root, "output", "results_IOHMM", "mcmc")
-os.makedirs(output_dir, exist_ok=True)
-
 # * * * Set the parameters of the GLM-HMM * * *
-num_states = 3   # number of discrete states
+num_states = K = 3   # number of discrete states
 obs_dim = 1           # number of observed dimensions
 num_categories = 2    # number of categories for output
 input_dim = 2         # input dimensions
 
 initial_trials = 100
-additional_trials = T = 100
+additional_trials = T = 1000
+
+# * * * os dirs * * *
+root = os.path.dirname(os.path.abspath(__file__))
+output_dir = os.path.join(root, "output", "results_IOHMM", "mcmc", str(T+1))
+os.makedirs(output_dir, exist_ok=True)
 
 
 def iohmm_random_gibbs(
@@ -136,7 +136,7 @@ def main(args: argparse.Namespace):
     true_iohmm = ssm.HMM(num_states, obs_dim, input_dim, observations="input_driven_obs", 
                     observation_kwargs=dict(C=num_categories), transitions="standard")
     true_weights = np.array([[[6, 1]], [[2, -3]], [[2, 3]]])
-    true_log_trans_mat = np.log(np.array([[[0.98, 0.01, 0.01], [0.05, 0.92, 0.03], [0.02, 0.03, 0.94]]]))
+    true_log_trans_mat = np.log(np.array([[[0.98, 0.01, 0.01], [0.05, 0.92, 0.03], [0.02, 0.03, 0.95]]]))
     true_trans_mat = np.exp(true_log_trans_mat)[0]
     true_iohmm.observations.params = true_weights
     true_iohmm.transitions.params = true_log_trans_mat

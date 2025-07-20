@@ -16,15 +16,15 @@ mpl.rcParams['text.usetex'] = True
 mpl.rcParams['mathtext.fontset'] = 'cm'
 mpl.rcParams['font.family'] = ['sans-serif']
 
-# * * * os dirs * * *
-root = os.path.dirname(os.path.abspath(__file__))
-output_dir = os.path.join(root, "output", "results_IOHMM", "dlpm")
-os.makedirs(output_dir, exist_ok=True)
-
 # * * * parameters of the GLM-HMM * * *
 num_factors = K = 3 # latent states
-initial_trials = 400
-additional_trials = T = 100
+initial_trials = 100
+additional_trials = T = 1000
+
+# * * * os dirs * * *
+root = os.path.dirname(os.path.abspath(__file__))
+output_dir = os.path.join(root, "output", "results_IOHMM", "dlfm", str(T+1))
+os.makedirs(output_dir, exist_ok=True)
 
 
 # Plotting results
@@ -118,10 +118,11 @@ def iohmm_dlfm(num_samples, features, observations, labels):
             ztil.value = np.random.dirichlet(np.ones(K), size=m)
         else:
             ztil.value = np.abs(z.value)
-        Pprob.solve()
+        Pprob.solve(reduced_tol_gap_abs=5e-4, reduced_tol_gap_rel=5e-4)
 
         rtil.value = cp.vstack(r).value
-        Fprob.solve()
+        # Fprob.solve()
+        Fprob.solve(reduced_tol_gap_abs=5e-4, reduced_tol_gap_rel=5e-4)
 
         print(f"Iteration {i}: P-problem value: {Pobj.value}, F-problem value: {Fobj.value}, gap: {np.abs(Pobj.value - Fobj.value)}.")
         if np.abs(Pobj.value - Fobj.value) < eps or i > 300:
