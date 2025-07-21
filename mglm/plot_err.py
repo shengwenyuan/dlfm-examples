@@ -75,13 +75,13 @@ def plot_rmse_pi():
     num_repeats = 1
     error=[]
     for seed in np.arange(num_repeats):
-        error_in_weights_dlfm = np.load(os.path.join(npy_dir, "dlfm", "101", f"dlfm_error_in_pis_atseed{seed}.npy"))
-        error_in_weights_dlfm = np.convolve(error_in_weights_dlfm, np.ones(5)/5, mode='valid')
-        error += error_in_weights_dlfm.tolist()
+        error_in_pis_dlfm = np.load(os.path.join(npy_dir, "dlfm", "101", f"dlfm_error_in_pis_atseed{seed}.npy"))
+        error_in_pis_dlfm = np.convolve(error_in_pis_dlfm, np.ones(5)/5, mode='valid')
+        error += error_in_pis_dlfm.tolist()
 
-        error_in_weights_random = np.load(os.path.join(npy_dir, "mcmc", "101", f"random_atseed{seed}_error_in_pis.npy"))
-        error_in_weights_random = np.convolve(error_in_weights_random, np.ones(5)/5, mode='valid')
-        error += error_in_weights_random.tolist()
+        error_in_pis_random = np.load(os.path.join(npy_dir, "mcmc", "101", f"random_atseed{seed}_error_in_pis.npy"))
+        error_in_pis_random = np.convolve(error_in_pis_random, np.ones(5)/5, mode='valid')
+        error += error_in_pis_random.tolist()
 
     sampling_method = (['dlfm'] * num_trials + ['random'] * num_trials) * num_repeats
     trials = (np.arange(num_trials) + init_trials).tolist() * 2 * num_repeats

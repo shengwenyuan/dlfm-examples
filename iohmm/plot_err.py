@@ -48,20 +48,20 @@ def plot_rmse_w():
 
     # Plotting error in weights
     num_repeats = 1
-    error_in_weights=[]
+    error=[]
     for seed in np.arange(num_repeats):
         error_in_weights_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", "dlfm_errorinweights_atseed"+str(seed)+".npy"))
         error_in_weights_dlfm = np.convolve(error_in_weights_dlfm, np.ones(5)/5, mode='valid')
-        error_in_weights += error_in_weights_dlfm.tolist()
+        error += error_in_weights_dlfm.tolist()
 
         error_in_weights_random = np.load(os.path.join(npy_dir, "mcmc", "1001", "random_gibbs_PG_errorinweights_atseed"+str(seed)+"_gibbs_400.npy"))
         error_in_weights_random = np.convolve(error_in_weights_random, np.ones(5)/5, mode='valid')
-        error_in_weights += error_in_weights_random.tolist()
+        error += error_in_weights_random.tolist()
 
     sampling_method = (['dlfm'] * num_trials + ['random'] * num_trials) * num_repeats
     trials = (np.arange(num_trials) + init_trials).tolist() * 2 * num_repeats
 
-    weights_list = {"trial \#": trials, "Method": sampling_method, "RMSE ($\{w_k\}_{k=1}^K$)": error_in_weights}
+    weights_list = {"trial \#": trials, "Method": sampling_method, "RMSE ($\{w_k\}_{k=1}^K$)": error}
     df = pd.DataFrame(weights_list, columns=['trial \#', 'Method', 'RMSE ($\{w_k\}_{k=1}^K$)'])
     fig, ax = plt.subplots(figsize=(5, 5))
     sns.lineplot(x="trial \#", y="RMSE ($\{w_k\}_{k=1}^K$)", hue="Method", data=df, ax=ax, palette=cols_traces, linewidth=2, alpha=0.8)
@@ -82,20 +82,20 @@ def plot_rmse_p():
 
     # Plotting error in weights
     num_repeats = 1
-    error_in_weights=[]
+    error=[]
     for seed in np.arange(num_repeats):
-        error_in_weights_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", "dlfm_errorinPs_atseed"+str(seed)+".npy"))
-        error_in_weights_dlfm = np.convolve(error_in_weights_dlfm, np.ones(5)/5, mode='valid')
-        error_in_weights += error_in_weights_dlfm.tolist()
+        error_in_ps_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", "dlfm_errorinPs_atseed"+str(seed)+".npy"))
+        error_in_ps_dlfm = np.convolve(error_in_ps_dlfm, np.ones(5)/5, mode='valid')
+        error += error_in_ps_dlfm.tolist()
 
-        error_in_weights_random = np.load(os.path.join(npy_dir, "mcmc", "1001", "random_gibbs_PG_errorinPs_atseed"+str(seed)+"_gibbs_400.npy"))
-        error_in_weights_random = np.convolve(error_in_weights_random, np.ones(5)/5, mode='valid')
-        error_in_weights += error_in_weights_random.tolist()
+        error_in_ps_random = np.load(os.path.join(npy_dir, "mcmc", "1001", "random_gibbs_PG_errorinPs_atseed"+str(seed)+"_gibbs_400.npy"))
+        error_in_ps_random = np.convolve(error_in_ps_random, np.ones(5)/5, mode='valid')
+        error += error_in_ps_random.tolist()
 
     sampling_method = (['dlfm'] * num_trials + ['random'] * num_trials) * num_repeats
     trials = (np.arange(num_trials) + init_trials).tolist() * 2 * num_repeats
 
-    weights_list = {"trial \#": trials, "Method": sampling_method, "RMSE (A)": error_in_weights}
+    weights_list = {"trial \#": trials, "Method": sampling_method, "RMSE (A)": error}
     df = pd.DataFrame(weights_list, columns=['trial \#', 'Method', 'RMSE (A)'])
     fig, ax = plt.subplots(figsize=(5, 5))
     sns.lineplot(x="trial \#", y="RMSE (A)", hue="Method", data=df, ax=ax, palette=cols_traces, linewidth=2, alpha=0.8)
