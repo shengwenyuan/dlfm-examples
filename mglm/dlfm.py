@@ -183,6 +183,6 @@ def main(seed):
 
 
 if __name__ == "__main__":
-    seed = 0
+    seed = 1
     np.random.seed(seed)
     main(seed)

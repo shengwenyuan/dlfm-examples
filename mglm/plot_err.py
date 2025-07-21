@@ -40,7 +40,7 @@ true_weights = np.reshape(true_weights, (num_states,input_dim))
 
 def plot_rmse_w():
     # Plotting error in weights
-    num_repeats = 1
+    num_repeats = 2
     error=[]
     for seed in np.arange(num_repeats):
         error_in_weights_dlfm = np.load(os.path.join(npy_dir, "dlfm", "101", f"dlfm_error_in_weights_atseed{seed}.npy"))
@@ -72,7 +72,7 @@ def plot_rmse_w():
 
 def plot_rmse_pi():
     # Plotting error in weights
-    num_repeats = 1
+    num_repeats = 2
     error=[]
     for seed in np.arange(num_repeats):
         error_in_pis_dlfm = np.load(os.path.join(npy_dir, "dlfm", "101", f"dlfm_error_in_pis_atseed{seed}.npy"))
