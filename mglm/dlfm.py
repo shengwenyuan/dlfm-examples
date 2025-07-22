@@ -15,7 +15,7 @@ mpl.rcParams['font.family'] = ['sans-serif']
 # generate dataset
 K = 2
 initial_trials = 100
-additional_trials = T = 100
+additional_trials = T = 1000
 num_features = 2
 sigma = 1.5
 

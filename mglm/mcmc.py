@@ -21,7 +21,7 @@ num_categories = 2 # binary output for now
 sigma = 1.5
 
 initial_T = 100
-T = 100
+T = 1000
 
 # * * * os dirs * * *
 root = os.path.dirname(os.path.abspath(__file__))

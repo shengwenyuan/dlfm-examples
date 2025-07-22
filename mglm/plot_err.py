@@ -30,7 +30,7 @@ num_categories = 2    # number of categories for output
 input_dim = 2         # input dimensions
 
 init_trials = 100
-num_trials = 101 - 4 # consider convolve
+num_trials = 1001 - 4 # consider convolve
 
 # * * * * * * groundtruth MGLM for generation * * * * * *
 true_pi0 = np.array([0.6, 0.4])
@@ -43,11 +43,11 @@ def plot_rmse_w():
     num_repeats = 2
     error=[]
     for seed in np.arange(num_repeats):
-        error_in_weights_dlfm = np.load(os.path.join(npy_dir, "dlfm", "101", f"dlfm_error_in_weights_atseed{seed}.npy"))
+        error_in_weights_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_error_in_weights_atseed{seed}.npy"))
         error_in_weights_dlfm = np.convolve(error_in_weights_dlfm, np.ones(5)/5, mode='valid')
         error += error_in_weights_dlfm.tolist()
 
-        error_in_weights_random = np.load(os.path.join(npy_dir, "mcmc", "101", f"random_atseed{seed}_error_in_weights.npy"))
+        error_in_weights_random = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_atseed{seed}_error_in_weights.npy"))
         error_in_weights_random = np.convolve(error_in_weights_random, np.ones(5)/5, mode='valid')
         error += error_in_weights_random.tolist()
 
@@ -75,11 +75,11 @@ def plot_rmse_pi():
     num_repeats = 2
     error=[]
     for seed in np.arange(num_repeats):
-        error_in_pis_dlfm = np.load(os.path.join(npy_dir, "dlfm", "101", f"dlfm_error_in_pis_atseed{seed}.npy"))
+        error_in_pis_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_error_in_pis_atseed{seed}.npy"))
         error_in_pis_dlfm = np.convolve(error_in_pis_dlfm, np.ones(5)/5, mode='valid')
         error += error_in_pis_dlfm.tolist()
 
-        error_in_pis_random = np.load(os.path.join(npy_dir, "mcmc", "101", f"random_atseed{seed}_error_in_pis.npy"))
+        error_in_pis_random = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_atseed{seed}_error_in_pis.npy"))
         error_in_pis_random = np.convolve(error_in_pis_random, np.ones(5)/5, mode='valid')
         error += error_in_pis_random.tolist()
 
