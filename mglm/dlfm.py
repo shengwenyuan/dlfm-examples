@@ -180,6 +180,7 @@ def main(seed):
     error_pis_hat = np.linalg.norm(np.array([comp['p'] for comp in components]) - np.array(pi_hat_list), axis=1)
     np.save(os.path.join(output_dir, f"dlfm_error_in_weights_atseed{seed}.npy"), error_weights)
     np.save(os.path.join(output_dir, f"dlfm_error_in_pis_atseed{seed}.npy"), error_pis_hat)
+    np.save(os.path.join(output_dir, f"dlfm_selectedinputs_atseed{seed}.npy"), features)
 
 
 if __name__ == "__main__":

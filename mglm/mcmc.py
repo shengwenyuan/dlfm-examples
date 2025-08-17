@@ -29,7 +29,7 @@ output_dir = os.path.join(root, "output", "results_MGLM", "mcmc", str(T+1))
 os.makedirs(output_dir, exist_ok=True)
 
 
-def mglm_random(seed, T, initial_inputs, K,true_mglm, test_mglm, input_list, burnin = 150, n_iters=300):
+def mglm_random(seed, T, initial_inputs, K, true_mglm, test_mglm, input_list, burnin = 150, n_iters=300):
     """ Random sampling for fitting the model"""
     print("Fitting MGLM using random sampling")
 
@@ -146,4 +146,4 @@ np.save(os.path.join(output_dir, "random_atseed"+str(seed) + "_error_in_weights.
 np.save(os.path.join(output_dir, "random_atseed"+str(seed) + "_pis.npy"), pis_list)
 np.save(os.path.join(output_dir, "random_atseed"+str(seed) + "_error_in_pis.npy"), error_in_pis)
 np.save(os.path.join(output_dir, "random_atseed"+str(seed) + "_posteriorcov.npy"), posteriorcov)
-# np.save(os.path.join(output_dir, "random_atseed"+str(seed) + "_selectedinputs.npy"), selected_inputs)
+np.save(os.path.join(output_dir, "random_atseed"+str(seed) + "_selectedinputs.npy"), selected_inputs)
