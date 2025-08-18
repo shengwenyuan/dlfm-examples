@@ -165,12 +165,20 @@ def main(args: argparse.Namespace):
 
     # Train iohmm using random sampling
     method = args.fitting_method
+    
+    # Start timing
+    start_time = time.time()
+    
     if method=='gibbs':
         pi0_list, Ps_list, weights_list, post_cov, selected_inputs = iohmm_random_gibbs(seed, additional_trials, initial_inputs, num_states, true_iohmm, test_iohmm, stimuli_list, method = "gibbs", num_iters = num_gibbs_samples, burnin = args.num_gibbs_burnin)
     elif method=='gibbs_PG':
        pi0_list, Ps_list, weights_list, post_cov, selected_inputs = iohmm_random_gibbs(seed, additional_trials, initial_inputs, num_states, true_iohmm, test_iohmm, stimuli_list, method = "gibbs", polyagamma=True, num_iters = num_gibbs_samples, burnin = args.num_gibbs_burnin)
     elif method=='gibbs_parallel':
         pi0_list, Ps_list, weights_list, post_cov, selected_inputs = iohmm_random_gibbs(seed, additional_trials, initial_inputs, num_states, true_iohmm, test_iohmm, stimuli_list, method = "gibbs_parallel")
+    
+    # End timing
+    end_time = time.time()
+    total_time = end_time - start_time
     
     true_weights = np.reshape(true_weights, (num_states, input_dim))
     error_weights = np.linalg.norm(np.linalg.norm(weights_list - true_weights, axis=1), axis=1)
@@ -181,6 +189,8 @@ def main(args: argparse.Namespace):
     np.save(os.path.join(output_dir, "random_"+method+"_errorinPs_atseed"+str(seed)+"_gibbs_"+str(num_gibbs_samples)+".npy"), error_Ps)
     np.save(os.path.join(output_dir, "random_"+method+"_posteriorcovariance_atseed"+str(seed)+"_gibbs_"+str(num_gibbs_samples)+".npy"), post_cov)
     np.save(os.path.join(output_dir, "random_"+method+"_selectedinputs_atseed"+str(seed)+"_gibbs_"+str(num_gibbs_samples)+".npy"), selected_inputs)
+    np.save(os.path.join(output_dir, "random_"+method+"_total_time_atseed"+str(seed)+"_gibbs_"+str(num_gibbs_samples)+".npy"), total_time)
+    print(f"Total time taken for IOHMM random sampling with {method}: {total_time:.2f} seconds")
 
 
 if __name__ == "__main__":

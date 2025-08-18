@@ -7,6 +7,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import time
 import argparse
 from scipy.optimize import linear_sum_assignment
 from ssm.util import find_permutation
@@ -154,6 +155,10 @@ def main(seed):
     # Solve the IO-HMM with DLFM
     theta_list = []
     p_tr_hat_list = []
+    
+    # Start timing for the entire optimization process
+    start_time = time.time()
+    
     for t in range(T + 1):
         num_samples = initial_trials + t
         thetas_val, z_val = iohmm_dlfm(num_samples, features, observations, labels)
@@ -168,12 +173,19 @@ def main(seed):
         labels = np.append(labels, s)
         s = np.random.choice(num_factors, p=p_tr[s])
 
+    # End timing
+    end_time = time.time()
+    total_time = end_time - start_time
+
 
     # Saving results
     error_weights = np.linalg.norm(np.linalg.norm(coefs - np.array(theta_list), axis=1), axis=1)
     error_Ps = np.linalg.norm(np.linalg.norm(p_tr - np.array(p_tr_hat_list), axis=1), axis=1)
     np.save(os.path.join(output_dir, "dlfm_errorinweights_atseed" + str(seed) + ".npy"), error_weights)
     np.save(os.path.join(output_dir, "dlfm_errorinPs_atseed" + str(seed) + ".npy"), error_Ps)
+    np.save(os.path.join(output_dir, f"dlfm_selectedinputs_atseed{seed}.npy"), features)
+    np.save(os.path.join(output_dir, "dlfm_total_time_atseed" + str(seed) + ".npy"), total_time)
+    print(f"Total time taken for IOHMM with DLFM: {total_time:.2f} seconds")
 
 
 if __name__ == "__main__":

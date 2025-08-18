@@ -4,6 +4,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import time
 
 from scipy.optimize import linear_sum_assignment
 
@@ -158,6 +159,10 @@ def main(seed):
     # Solve the MGLM with DLFM
     theta_list = []
     pi_hat_list = []
+    
+    # Start timing for the entire optimization process
+    start_time = time.time()
+    
     for t in range(T + 1):
         num_samples = initial_trials + t
         print(f"\nUsing {num_samples} samples")
@@ -174,6 +179,10 @@ def main(seed):
         observations = np.append(observations, components[comp_idx[0]]['coef'] @ feature[0] + np.random.normal(0, sigma))
         labels = np.append(labels, comp_idx[0])
     
+    # End timing
+    end_time = time.time()
+    total_time = end_time - start_time
+    
 
     # Saving results
     error_weights = np.linalg.norm(np.array([comp['coef'] for comp in components]) - np.array(theta_list), axis=(1,2))
@@ -181,9 +190,11 @@ def main(seed):
     np.save(os.path.join(output_dir, f"dlfm_error_in_weights_atseed{seed}.npy"), error_weights)
     np.save(os.path.join(output_dir, f"dlfm_error_in_pis_atseed{seed}.npy"), error_pis_hat)
     np.save(os.path.join(output_dir, f"dlfm_selectedinputs_atseed{seed}.npy"), features)
+    np.save(os.path.join(output_dir, f"dlfm_total_time_atseed{seed}.npy"), total_time)
+    print(f"Total time taken for MGLM with DLFM: {total_time:.2f} seconds")
 
 
 if __name__ == "__main__":
-    seed = 1
+    seed = 0
     np.random.seed(seed)
     main(seed)

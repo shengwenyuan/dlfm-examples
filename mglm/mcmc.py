@@ -2,6 +2,7 @@ import argparse
 import autograd.numpy.random as npr
 import numpy as np 
 import os
+import time
 from utils_mglm.mglms import MGLM 
 # from mglm_random import mglm_random
 
@@ -137,7 +138,14 @@ zs, observations = true_mglm.sample_y(initial_T, initial_inputs)
 # Train MGLM with random sampling-------------------------------------------------------------------------------------------------------------
 test_mglm = MGLM(K=num_states, D=obs_dim, M=input_dim, C=num_categories, prior_sigma=sigma)
 
+# Start timing
+start_time = time.time()
+
 pis_list, weights_list, selected_inputs, posteriorcov = mglm_random(seed, T, initial_inputs, num_states, true_mglm, test_mglm, input_list, burnin = 150, n_iters=300)
+
+# End timing
+end_time = time.time()
+total_time = end_time - start_time
 
 error_in_weights = np.linalg.norm(weights_list - true_weights, axis=(1,2))
 error_in_pis = np.linalg.norm(pis_list - true_pi0, axis=1)
@@ -147,3 +155,5 @@ np.save(os.path.join(output_dir, "random_atseed"+str(seed) + "_pis.npy"), pis_li
 np.save(os.path.join(output_dir, "random_atseed"+str(seed) + "_error_in_pis.npy"), error_in_pis)
 np.save(os.path.join(output_dir, "random_atseed"+str(seed) + "_posteriorcov.npy"), posteriorcov)
 np.save(os.path.join(output_dir, "random_atseed"+str(seed) + "_selectedinputs.npy"), selected_inputs)
+np.save(os.path.join(output_dir, "random_atseed"+str(seed) + "_total_time.npy"), total_time)
+print(f"Total time taken for MGLM random sampling: {total_time:.2f} seconds")

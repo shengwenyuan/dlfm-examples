@@ -110,6 +110,81 @@ def plot_rmse_p():
     plt.savefig(os.path.join(graph_dir, f"rmse_Ps_{num_trials}.png"), dpi=400)
 
 
+def plot_input_selection():
+    seed = 0
+    
+    selected_inputs_mcmc = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_selectedinputs_atseed{seed}_gibbs_400.npy"))
+    selected_inputs_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_selectedinputs_atseed{seed}.npy"))
+    selected_inputs_mcmc = np.array(selected_inputs_mcmc)[:, 0]
+    selected_inputs_dlfm = selected_inputs_dlfm[init_trials:, 0]
+    
+    num_samples = 500
+    stim_vals = np.arange(-5, 5, step=0.01)
+    xgrid = np.linspace(start=stim_vals[0], stop=stim_vals[-1], num=num_samples)
+    samples = np.ones((num_samples, input_dim))
+    samples[:, 0] = xgrid
+    
+    ygrid = np.empty((num_states, num_samples))
+    ygrid = np.exp(true_iohmm.observations.calculate_logits(samples))[:, :, 1]
+    
+    fig, ax1 = plt.subplots(figsize=(6, 5), facecolor='white')
+    bins = np.arange(-5, 5, 0.5)
+    
+    ax1.hist(selected_inputs_dlfm, alpha=0.7, color=cols_traces[0], label='DLFM', bins=bins)
+    ax1.hist(selected_inputs_mcmc, alpha=0.7, color=cols_traces[1], label='MCMC', bins=bins)
+    ax1.set_xlabel("input")
+    ax1.set_ylabel("frequency")
+    
+    ax2 = ax1.twinx()
+    for k in range(num_states):
+        ax2.plot(xgrid, ygrid[:, k], linewidth=3, color='gray', alpha=0.3, zorder=1)
+    ax2.set_ylabel("$p(y=1|x)$")
+    
+    ax1.set_zorder(ax2.get_zorder() + 1)
+    ax1.patch.set_visible(False)
+    ax1.legend(loc='upper left')
+    plt.title("Input Selection: IO-HMM", fontsize=16)
+    plt.tight_layout()
+    plt.grid(alpha=0.3)
+    # plt.show()
+    plt.savefig(os.path.join(graph_dir, f"input_selection_{num_trials}.png"), dpi=400)
+
+
+def print_total_times():
+    print("=" * 50)
+    print("TOTAL EXECUTION TIMES (IO-HMM)")
+    print("=" * 50)
+    
+    num_repeats = 1
+    
+    for seed in range(num_repeats):
+        print(f"\nSeed {seed}:")
+        mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_total_time_atseed{seed}_gibbs_400.npy"))
+        print(f"  MCMC: {mcmc_time:.2f} seconds ({mcmc_time/60:.2f} minutes)")
+        dlfm_time = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_total_time_atseed{seed}.npy"))
+        print(f"  DLFM: {dlfm_time:.2f} seconds ({dlfm_time/60:.2f} minutes)")
+    
+    mcmc_times = []
+    dlfm_times = []
+    
+    for seed in range(num_repeats):
+        mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_total_time_atseed{seed}_gibbs_400.npy"))
+        mcmc_times.append(mcmc_time)
+        dlfm_time = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_total_time_atseed{seed}.npy"))
+        dlfm_times.append(dlfm_time)
+    
+    avg_mcmc = np.mean(mcmc_times)
+    avg_dlfm = np.mean(dlfm_times)
+    print(f"\nAverage MCMC time: {avg_mcmc:.2f} seconds ({avg_mcmc/60:.2f} minutes)")
+    print(f"Average DLFM time: {avg_dlfm:.2f} seconds ({avg_dlfm/60:.2f} minutes)")
+    
+    speedup = avg_mcmc / avg_dlfm
+    print(f"DLFM speedup: {speedup:.2f}x {'faster' if speedup > 1 else 'slower'} than MCMC")
+    print("=" * 50)
+
+
 if __name__ == "__main__":
     plot_rmse_w()
     plot_rmse_p()
+    plot_input_selection()
+    print_total_times()
