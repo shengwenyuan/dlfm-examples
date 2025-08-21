@@ -14,10 +14,12 @@ mpl.rcParams['mathtext.fontset'] = 'cm'
 mpl.rcParams['font.family'] = ['sans-serif']
 
 # generate dataset
-K = 2
+# K = 2
+K = 3
 initial_trials = 100
 additional_trials = T = 1000
-num_features = 2
+# num_features = 2
+num_features = 10
 sigma = 1.5
 
 # * * * os dirs * * *
@@ -141,10 +143,15 @@ def mglm_dlfm(features, observations, labels):
     return thetas_val, z_val
 
 def main(seed):
+    # components = [
+    #     {'coef': np.array([3, -6]), 'p': 0.6},
+    #     {'coef': np.array([3, 6]), 'p': 0.4},
+    # ]
     components = [
-        {'coef': np.array([3, -6]), 'p': 0.6},
-        {'coef': np.array([3, 6]), 'p': 0.4},
-    ]
+    {'coef': np.array([-1.47, 0.07, 0.16, -2.02, 0.14, 0.33, 0.71, 0.80, 1.53, -0.26]), 'p': 0.4},
+    {'coef': np.array([-0.12, 1.38, -1.25, 0.88, -0.80, 1.33, -1.43, -0.42, 0.90, -0.47]), 'p': 0.3},
+    {'coef': np.array([1.14, -1.33, 0.16, 0.23, -1.20, -0.90, 1.40, 0.98, -1.11, 0.60]), 'p': 0.3},
+]
 
     features = np.random.uniform(-10, 10, (initial_trials, num_features))
     observations = np.zeros(initial_trials)
