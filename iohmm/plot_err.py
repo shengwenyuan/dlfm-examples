@@ -32,6 +32,8 @@ input_dim = 2         # input dimensions
 num_trials = 997
 init_trials = 100
 
+num_repeats = 1
+
 # * * * * groundtruth HMM for generation * * * * * *
 true_iohmm = ssm.HMM(num_states, obs_dim, input_dim, observations="input_driven_obs", 
                    observation_kwargs=dict(C=num_categories), transitions="standard")
@@ -43,11 +45,9 @@ gen_trans_mat = np.exp(gen_log_trans_mat)[0]
 
 
 def plot_rmse_w():
-    # TODO: For model mismatch
     true_weights = np.reshape(gen_weights, (num_states, input_dim))
 
     # Plotting error in weights
-    num_repeats = 1
     error=[]
     for seed in np.arange(num_repeats):
         error_in_weights_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", "dlfm_errorinweights_atseed"+str(seed)+".npy"))
@@ -81,7 +81,6 @@ def plot_rmse_p():
     true_weights = np.reshape(gen_weights, (num_states, input_dim))
 
     # Plotting error in weights
-    num_repeats = 1
     error=[]
     for seed in np.arange(num_repeats):
         error_in_ps_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", "dlfm_errorinPs_atseed"+str(seed)+".npy"))
@@ -151,12 +150,6 @@ def plot_input_selection():
 
 
 def print_total_times():
-    print("=" * 50)
-    print("TOTAL EXECUTION TIMES (IO-HMM)")
-    print("=" * 50)
-    
-    num_repeats = 1
-    
     for seed in range(num_repeats):
         print(f"\nSeed {seed}:")
         mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_total_time_atseed{seed}_gibbs_400.npy"))

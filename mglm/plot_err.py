@@ -32,6 +32,8 @@ input_dim = 2         # input dimensions
 init_trials = 100
 num_trials = 1001 - 4 # consider convolve
 
+num_repeats = 1
+
 # * * * * * * groundtruth MGLM for generation * * * * * *
 true_pi0 = np.array([0.6, 0.4])
 true_weights = np.array([[3,-6], [3, 6]])
@@ -40,7 +42,6 @@ true_weights = np.reshape(true_weights, (num_states,input_dim))
 
 def plot_rmse_w():
     # Plotting error in weights
-    num_repeats = 2
     error=[]
     for seed in np.arange(num_repeats):
         error_in_weights_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_error_in_weights_atseed{seed}.npy"))
@@ -72,7 +73,6 @@ def plot_rmse_w():
 
 def plot_rmse_pi():
     # Plotting error in weights
-    num_repeats = 2
     error=[]
     for seed in np.arange(num_repeats):
         error_in_pis_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_error_in_pis_atseed{seed}.npy"))
@@ -148,7 +148,6 @@ def print_total_times():
     print("TOTAL EXECUTION TIMES (MGLM)")
     print("=" * 50)
     
-    num_repeats = 1
     
     for seed in range(num_repeats):
         print(f"\nSeed {seed}:")
