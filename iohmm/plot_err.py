@@ -33,6 +33,7 @@ num_trials = 997
 init_trials = 100
 
 num_repeats = 1
+num_gibbs_samples = 4000
 
 # * * * * groundtruth HMM for generation * * * * * *
 true_iohmm = ssm.HMM(num_states, obs_dim, input_dim, observations="input_driven_obs", 
@@ -54,7 +55,7 @@ def plot_rmse_w():
         error_in_weights_dlfm = np.convolve(error_in_weights_dlfm, np.ones(5)/5, mode='valid')
         error += error_in_weights_dlfm.tolist()
 
-        error_in_weights_random = np.load(os.path.join(npy_dir, "mcmc", "1001", "random_gibbs_PG_errorinweights_atseed"+str(seed)+"_gibbs_400.npy"))
+        error_in_weights_random = np.load(os.path.join(npy_dir, "mcmc", "1001", "random_gibbs_PG_errorinweights_atseed"+str(seed)+f"_gibbs_{num_gibbs_samples}.npy"))
         error_in_weights_random = np.convolve(error_in_weights_random, np.ones(5)/5, mode='valid')
         error += error_in_weights_random.tolist()
 
@@ -87,7 +88,7 @@ def plot_rmse_p():
         error_in_ps_dlfm = np.convolve(error_in_ps_dlfm, np.ones(5)/5, mode='valid')
         error += error_in_ps_dlfm.tolist()
 
-        error_in_ps_random = np.load(os.path.join(npy_dir, "mcmc", "1001", "random_gibbs_PG_errorinPs_atseed"+str(seed)+"_gibbs_400.npy"))
+        error_in_ps_random = np.load(os.path.join(npy_dir, "mcmc", "1001", "random_gibbs_PG_errorinPs_atseed"+str(seed)+f"_gibbs_{num_gibbs_samples}.npy"))
         error_in_ps_random = np.convolve(error_in_ps_random, np.ones(5)/5, mode='valid')
         error += error_in_ps_random.tolist()
 
@@ -112,7 +113,7 @@ def plot_rmse_p():
 def plot_input_selection():
     seed = 0
     
-    selected_inputs_mcmc = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_selectedinputs_atseed{seed}_gibbs_400.npy"))
+    selected_inputs_mcmc = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_selectedinputs_atseed{seed}_gibbs_{num_gibbs_samples}.npy"))
     selected_inputs_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_selectedinputs_atseed{seed}.npy"))
     selected_inputs_mcmc = np.array(selected_inputs_mcmc)[:, 0]
     selected_inputs_dlfm = selected_inputs_dlfm[init_trials:, 0]
@@ -129,14 +130,14 @@ def plot_input_selection():
     fig, ax1 = plt.subplots(figsize=(6, 5), facecolor='white')
     bins = np.arange(-5, 5, 0.5)
     
-    ax1.hist(selected_inputs_dlfm, alpha=0.7, color=cols_traces[0], label='DLFM', bins=bins)
-    ax1.hist(selected_inputs_mcmc, alpha=0.7, color=cols_traces[1], label='MCMC', bins=bins)
+    ax1.hist(selected_inputs_dlfm, alpha=0.55, color=cols_traces[0], label='DLFM', bins=bins)
+    ax1.hist(selected_inputs_mcmc, alpha=0.55, color=cols_traces[1], label='MCMC', bins=bins)
     ax1.set_xlabel("input")
     ax1.set_ylabel("frequency")
     
     ax2 = ax1.twinx()
     for k in range(num_states):
-        ax2.plot(xgrid, ygrid[:, k], linewidth=3, color='gray', alpha=0.3, zorder=1)
+        ax2.plot(xgrid, ygrid[:, k], linewidth=3, color='gray', alpha=0.8, zorder=1)
     ax2.set_ylabel("$p(y=1|x)$")
     
     ax1.set_zorder(ax2.get_zorder() + 1)
@@ -152,7 +153,7 @@ def plot_input_selection():
 def print_total_times():
     for seed in range(num_repeats):
         print(f"\nSeed {seed}:")
-        mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_total_time_atseed{seed}_gibbs_400.npy"))
+        mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_total_time_atseed{seed}_gibbs_{num_gibbs_samples}.npy"))
         print(f"  MCMC: {mcmc_time:.2f} seconds ({mcmc_time/60:.2f} minutes)")
         dlfm_time = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_total_time_atseed{seed}.npy"))
         print(f"  DLFM: {dlfm_time:.2f} seconds ({dlfm_time/60:.2f} minutes)")
@@ -161,7 +162,7 @@ def print_total_times():
     dlfm_times = []
     
     for seed in range(num_repeats):
-        mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_total_time_atseed{seed}_gibbs_400.npy"))
+        mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_total_time_atseed{seed}_gibbs_{num_gibbs_samples}.npy"))
         mcmc_times.append(mcmc_time)
         dlfm_time = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_total_time_atseed{seed}.npy"))
         dlfm_times.append(dlfm_time)

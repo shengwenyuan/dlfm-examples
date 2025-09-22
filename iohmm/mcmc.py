@@ -199,8 +199,8 @@ if __name__ == "__main__":
                         help='Enter random seed')
     parser.add_argument('--fitting_method', type=str, default='gibbs_PG',
                         help='choose one of gibbs/gibbs_parallel/gibbs_PG')     
-    parser.add_argument('--num_gibbs_samples', type=int, default='400')
-    parser.add_argument('--num_gibbs_burnin', type=int, default='100')
+    parser.add_argument('--num_gibbs_samples', type=int, default='4000')
+    parser.add_argument('--num_gibbs_burnin', type=int, default='1000')
 
     args = parser.parse_args()
     

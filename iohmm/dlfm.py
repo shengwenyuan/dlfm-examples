@@ -109,6 +109,7 @@ def iohmm_dlfm(num_samples, features, observations, labels):
     Freg = lbd_z * cp.sum(cp.kl_div(z[:-1], z[1:]))  # cp.Expression: regularization on latent factors
     Fconstr = [z >= 0, z <= 1, cp.sum(z, axis=1) == 1]
     Fprob = cp.Problem(cp.Minimize(Fobj + Freg), Fconstr)
+    # Fprob = cp.Problem(cp.Minimize(Fobj), Fconstr)
     assert Fprob.is_dcp()
 
     # Solve, terminate when the F- and P-objective converge
