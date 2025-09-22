@@ -33,6 +33,7 @@ init_trials = 100
 num_trials = 1001 - 4 # consider convolve
 
 num_repeats = 1
+num_gibbs_samples = 300
 
 # * * * * * * groundtruth MGLM for generation * * * * * *
 true_pi0 = np.array([0.6, 0.4])
@@ -48,7 +49,7 @@ def plot_rmse_w():
         error_in_weights_dlfm = np.convolve(error_in_weights_dlfm, np.ones(5)/5, mode='valid')
         error += error_in_weights_dlfm.tolist()
 
-        error_in_weights_random = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_atseed{seed}_error_in_weights.npy"))
+        error_in_weights_random = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_atseed{seed}_gibbs_{num_gibbs_samples}_error_in_weights.npy"))
         error_in_weights_random = np.convolve(error_in_weights_random, np.ones(5)/5, mode='valid')
         error += error_in_weights_random.tolist()
 
@@ -79,7 +80,7 @@ def plot_rmse_pi():
         error_in_pis_dlfm = np.convolve(error_in_pis_dlfm, np.ones(5)/5, mode='valid')
         error += error_in_pis_dlfm.tolist()
 
-        error_in_pis_random = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_atseed{seed}_error_in_pis.npy"))
+        error_in_pis_random = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_atseed{seed}_gibbs_{num_gibbs_samples}_error_in_pis.npy"))
         error_in_pis_random = np.convolve(error_in_pis_random, np.ones(5)/5, mode='valid')
         error += error_in_pis_random.tolist()
 
@@ -104,7 +105,7 @@ def plot_rmse_pi():
 def plot_input_selection():
     seed = 0
     
-    selected_inputs_mcmc = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_atseed{seed}_selectedinputs.npy"))
+    selected_inputs_mcmc = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_atseed{seed}_gibbs_{num_gibbs_samples}_selectedinputs.npy"))
     selected_inputs_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_selectedinputs_atseed{seed}.npy"))
     selected_inputs_mcmc = np.array(selected_inputs_mcmc)[:, 0]  # First 1000 selected inputs
     selected_inputs_dlfm = selected_inputs_dlfm[init_trials:, 0]  # Skip initial trials, get first column
@@ -149,21 +150,24 @@ def print_total_times():
     print("=" * 50)
     
     
-    for seed in range(num_repeats):
-        print(f"\nSeed {seed}:")
-        mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_atseed{seed}_total_time.npy"))
-        print(f"  MCMC: {mcmc_time:.2f} seconds ({mcmc_time/60:.2f} minutes)")
-        dlfm_time = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_total_time_atseed{seed}.npy"))
-        print(f"  DLFM: {dlfm_time:.2f} seconds ({dlfm_time/60:.2f} minutes)")
+    # for seed in range(num_repeats):
+    #     print(f"\nSeed {seed}:")
+    #     mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_atseed{seed}_gibbs_{num_gibbs_samples}_total_time.npy"))
+    #     print(f"  MCMC: {mcmc_time:.2f} seconds ({mcmc_time/60:.2f} minutes)")
+    #     dlfm_time = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_total_time_atseed{seed}.npy"))
+    #     print(f"  DLFM: {dlfm_time:.2f} seconds ({dlfm_time/60:.2f} minutes)")
     
     mcmc_times = []
     dlfm_times = []
     
     for seed in range(num_repeats):
-        mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_atseed{seed}_total_time.npy"))
+        print(f"\nSeed {seed}:")
+        mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_atseed{seed}_gibbs_{num_gibbs_samples}_total_time.npy"))
         mcmc_times.append(mcmc_time)
+        print(f"  MCMC: {mcmc_time:.2f} seconds ({mcmc_time/60:.2f} minutes)")
         dlfm_time = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_total_time_atseed{seed}.npy"))
         dlfm_times.append(dlfm_time)
+        print(f"  DLFM: {dlfm_time:.2f} seconds ({dlfm_time/60:.2f} minutes)")
     
     avg_mcmc = np.mean(mcmc_times)
     avg_dlfm = np.mean(dlfm_times)

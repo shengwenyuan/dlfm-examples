@@ -151,21 +151,24 @@ def plot_input_selection():
 
 
 def print_total_times():
-    for seed in range(num_repeats):
-        print(f"\nSeed {seed}:")
-        mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_total_time_atseed{seed}_gibbs_{num_gibbs_samples}.npy"))
-        print(f"  MCMC: {mcmc_time:.2f} seconds ({mcmc_time/60:.2f} minutes)")
-        dlfm_time = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_total_time_atseed{seed}.npy"))
-        print(f"  DLFM: {dlfm_time:.2f} seconds ({dlfm_time/60:.2f} minutes)")
+    # for seed in range(num_repeats):
+    #     print(f"\nSeed {seed}:")
+    #     mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_total_time_atseed{seed}_gibbs_{num_gibbs_samples}.npy"))
+    #     print(f"  MCMC: {mcmc_time:.2f} seconds ({mcmc_time/60:.2f} minutes)")
+    #     dlfm_time = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_total_time_atseed{seed}.npy"))
+    #     print(f"  DLFM: {dlfm_time:.2f} seconds ({dlfm_time/60:.2f} minutes)")
     
     mcmc_times = []
     dlfm_times = []
     
     for seed in range(num_repeats):
+        print(f"\nSeed {seed}:")
         mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_total_time_atseed{seed}_gibbs_{num_gibbs_samples}.npy"))
         mcmc_times.append(mcmc_time)
+        print(f"  MCMC: {mcmc_time:.2f} seconds ({mcmc_time/60:.2f} minutes)")
         dlfm_time = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_total_time_atseed{seed}.npy"))
         dlfm_times.append(dlfm_time)
+        print(f"  DLFM: {dlfm_time:.2f} seconds ({dlfm_time/60:.2f} minutes)")
     
     avg_mcmc = np.mean(mcmc_times)
     avg_dlfm = np.mean(dlfm_times)
