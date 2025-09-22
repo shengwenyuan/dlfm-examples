@@ -25,8 +25,8 @@ num_categories = 2 # binary output for now
 sigma = 1.5
 # num_gibbs_burnin = 150
 # num_gibbs_samples = 300
-num_gibbs_burnin = 1000
-num_gibbs_samples = 4000
+num_gibbs_burnin = 500
+num_gibbs_samples = 2000
 
 initial_T = 100
 T = 1000
@@ -100,6 +100,7 @@ def mglm_random(seed, T, initial_inputs, K, true_mglm, test_mglm, input_list, bu
         pis = np.mean(pis_sampled, axis=0)
         ws = np.mean(weights_sampled, axis=0)
         # permuting
+        # print(f"t={t}, Before perm - pi_error: {np.linalg.norm(pis - true_pi):.4f}, w_error: {np.linalg.norm(ws - true_weights):.4f}")
         if K==2:
             if np.abs(pis[0]-true_pi[0])>np.abs(pis[0]-true_pi[1]):
                 ws[0], ws[1] = (ws[1]).copy(), (ws[0]).copy()
@@ -123,6 +124,7 @@ def mglm_random(seed, T, initial_inputs, K, true_mglm, test_mglm, input_list, bu
                 ws_permuted[new_idx] = ws[old_idx]
             pis = pis_permuted
             ws = ws_permuted
+        print(f"t={t}, After perm - pi_error: {np.linalg.norm(pis - true_pi):.4f}, w_error: {np.linalg.norm(ws - true_weights):.4f}")
 
         # Store the model parameters
         weights_list[t+1] = ws
@@ -154,12 +156,9 @@ true_mglm = MGLM(K=num_states, D=obs_dim, M=input_dim, C=num_categories, prior_s
 true_mglm.params = [true_pi0, true_weights_2]
 
 # List of possible inputs
-stim_vals = np.arange(-10,10,step=0.01).tolist()
-input_list = np.ones((len(stim_vals), input_dim))
-input_list[:,0] = stim_vals
+input_list = np.random.uniform(-10, 10, (2000, input_dim))
 # Initial inputs
-initial_inputs = np.ones((initial_T, input_dim)) # initialize inpts array
-initial_inputs[:,0] = np.random.choice(stim_vals, initial_T) # generate random sequence of input
+initial_inputs = np.random.uniform(-10, 10, size=(initial_T, input_dim))
 
 # Sample observations from true mixture of GLMs
 zs, observations = true_mglm.sample_y(initial_T, initial_inputs)
