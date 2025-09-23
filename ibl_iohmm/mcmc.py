@@ -12,13 +12,13 @@ from ssm.input_selection import input_selection
 from ssm.util import one_hot, find_permutation, permute_params
 
 # * * * Set the parameters of the GLM-HMM * * *
-num_states = K = 3   # number of discrete states = [engaged, disengaged, right/left-bias]
+num_states = K = 3    # number of discrete states = [engaged, disengaged, right/left-bias]
 obs_dim = 1           # number of observed dimensions
 num_categories = 2    # number of categories for output = [0, 1(rightward choice=_ibl_trials.choice=1)]
 input_dim = 4         # input dimensions = [stimulus = contrastRight - contrastLeft, 
-                                            #bias = 1, 
-                                            #prev_choice = _ibl_trials.choice, 
-                                            #prev_stimulus_side(win-stay, lose-switch) = prev_contrastR/L]
+                      #                     bias = 1, 
+                      #                     prev_choice = _ibl_trials.choice, 
+                      #                     prev_stimulus_side(win-stay, lose-switch) = prev_contrastR/L]
 initial_trials = 100
 
 # * * * os dirs * * *
@@ -39,6 +39,8 @@ def iohmm_real_data_gibbs(
         remaining_observations,
         K, 
         test_iohmm, 
+        test_observations, 
+        test_inputs, 
         method = 'gibbs', 
         **kwargs
     ):
@@ -48,6 +50,7 @@ def iohmm_real_data_gibbs(
 
     M = initial_inputs[0].shape[1]
     T = len(remaining_inputs[0])
+    # T = 100
 
     # Use real observations for initial samples
     init_time_bins = len(initial_inputs[0])
@@ -59,6 +62,7 @@ def iohmm_real_data_gibbs(
     pi0_list = np.empty((T+1, K))
     Ps_list = np.empty((T+1, K, K))
     posteriorcov = np.empty((T+1))
+    ll_list = np.empty((T+1))
 
     # Run inference using the initial dataset
     if method=='gibbs_parallel':
@@ -75,12 +79,12 @@ def iohmm_real_data_gibbs(
     params = np.hstack((ravelled_obsparams, ravelled_Ps))
     cov = np.cov(params, rowvar = False)
     posteriorcov[0] =  0.5*np.linalg.slogdet(cov)[1] 
+    ll_list[0] = test_iohmm.log_likelihood(test_observations, inputs=test_inputs)
 
     # Process remaining data sequentially
     selected_inputs = []
     inputs = initial_inputs
-    for t in range(100):
-    # for t in range(T):
+    for t in range(T):
         print("Computing parameters of IO-HMM using "+str(t+1+init_time_bins)+" samples")
         # Get next real input and observation
         x_new = remaining_inputs[0][t]
@@ -115,12 +119,13 @@ def iohmm_real_data_gibbs(
         ravelled_Ps = np.reshape(Ps_sampled[:,:,:-1], (Ps_sampled.shape[0], (K) * (K-1)))
         params = np.hstack((ravelled_obsparams, ravelled_Ps))
         cov = np.cov(params, rowvar = False)
-        posteriorcov[t+1] =  0.5 * np.linalg.slogdet(cov)[1]  
+        posteriorcov[t+1] = 0.5 * np.linalg.slogdet(cov)[1]
+        ll_list[t+1] = test_iohmm.log_likelihood(test_observations, inputs=test_inputs)
 
         # To store selected inputs at each step
         selected_inputs.append(x_new)
 
-    return pi0_list, Ps_list, obsparams_list, posteriorcov, selected_inputs
+    return pi0_list, Ps_list, obsparams_list, posteriorcov, ll_list, selected_inputs
 
 
 def run_5_fold_cv(input_features, observations, args):
@@ -173,26 +178,26 @@ def run_5_fold_cv(input_features, observations, args):
 
         start_time = time.time()
         if method=='gibbs':
-            pi0_list, Ps_list, weights_list, post_cov, selected_inputs = iohmm_real_data_gibbs(initial_inputs, initial_observations, remaining_inputs, remaining_observations, num_states, test_iohmm, method = "gibbs", num_iters = num_gibbs_samples, burnin = args.num_gibbs_burnin)
+            pi0_list, Ps_list, weights_list, post_cov, ll_list, selected_inputs = \
+                iohmm_real_data_gibbs(initial_inputs, initial_observations, remaining_inputs, remaining_observations, num_states, test_iohmm, test_observations, test_inputs, method = "gibbs", num_iters = num_gibbs_samples, burnin = args.num_gibbs_burnin)
         elif method=='gibbs_PG':
-           pi0_list, Ps_list, weights_list, post_cov, selected_inputs = iohmm_real_data_gibbs(initial_inputs, initial_observations, remaining_inputs, remaining_observations, num_states, test_iohmm, method = "gibbs", polyagamma=True, num_iters = num_gibbs_samples, burnin = args.num_gibbs_burnin)
+           pi0_list, Ps_list, weights_list, post_cov, ll_list, selected_inputs = \
+            iohmm_real_data_gibbs(initial_inputs, initial_observations, remaining_inputs, remaining_observations, num_states, test_iohmm, test_observations, test_inputs, method = "gibbs", polyagamma=True, num_iters = num_gibbs_samples, burnin = args.num_gibbs_burnin)
         elif method=='gibbs_parallel':
-            pi0_list, Ps_list, weights_list, post_cov, selected_inputs = iohmm_real_data_gibbs(initial_inputs, initial_observations, remaining_inputs, remaining_observations, num_states, test_iohmm, method = "gibbs_parallel")
+            pi0_list, Ps_list, weights_list, post_cov, ll_list, selected_inputs = \
+                iohmm_real_data_gibbs(initial_inputs, initial_observations, remaining_inputs, remaining_observations, num_states, test_iohmm, test_observations, test_inputs, method = "gibbs_parallel")
         end_time = time.time()
         total_time = end_time - start_time
 
-        LL = test_iohmm.log_likelihood(test_observations, inputs=test_inputs)
-        
         # Save results for this fold
         fold_output_dir = os.path.join(output_dir, f"fold_{fold}")
         os.makedirs(fold_output_dir, exist_ok=True)
-
-        np.save(os.path.join(fold_output_dir, f"ibl_{method}_LL_atseed{seed}_gibbs_{num_gibbs_samples}.npy"), LL)
+        np.save(os.path.join(fold_output_dir, f"ibl_{method}_LL_atseed{seed}_gibbs_{num_gibbs_samples}.npy"), ll_list)
         np.save(os.path.join(fold_output_dir, f"ibl_{method}_weights_atseed{seed}_gibbs_{num_gibbs_samples}.npy"), weights_list)
         np.save(os.path.join(fold_output_dir, f"ibl_{method}_Ps_atseed{seed}_gibbs_{num_gibbs_samples}.npy"), Ps_list)
         np.save(os.path.join(fold_output_dir, f"ibl_{method}_posteriorcovariance_atseed{seed}_gibbs_{num_gibbs_samples}.npy"), post_cov)
-        # np.save(os.path.join(fold_output_dir, f"ibl_{method}_selectedinputs_atseed{seed}_gibbs_{num_gibbs_samples}.npy"), selected_inputs)
         np.save(os.path.join(fold_output_dir, f"ibl_{method}_total_time_atseed{seed}_gibbs_{num_gibbs_samples}.npy"), total_time)
+        # np.save(os.path.join(fold_output_dir, f"ibl_{method}_selectedinputs_atseed{seed}_gibbs_{num_gibbs_samples}.npy"), selected_inputs)
         # np.save(os.path.join(fold_output_dir, f"test_inputs.npy"), test_inputs)
         # np.save(os.path.join(fold_output_dir, f"test_observations.npy"), test_observations)
         
