@@ -1,4 +1,5 @@
 *.npy
+ibl-behavioral-data-Dec2019*/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

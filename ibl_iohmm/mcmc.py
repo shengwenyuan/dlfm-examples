@@ -124,8 +124,6 @@ def iohmm_real_data_gibbs(
 
 
 def run_5_fold_cv(input_features, observations, args):
-    """Run 5-fold cross-validation on the IBL data"""
-
     seed = args.seed
     num_gibbs_samples = args.num_gibbs_samples
     method = args.fitting_method
@@ -218,8 +216,8 @@ if __name__ == "__main__":
                         help='Enter random seed')
     parser.add_argument('--fitting_method', type=str, default='gibbs_PG',
                         help='choose one of gibbs/gibbs_parallel/gibbs_PG')     
-    parser.add_argument('--num_gibbs_samples', type=int, default='400')
-    parser.add_argument('--num_gibbs_burnin', type=int, default='100')
+    parser.add_argument('--num_gibbs_samples', type=int, default='5000')
+    parser.add_argument('--num_gibbs_burnin', type=int, default='1000')
 
     args = parser.parse_args()
     
