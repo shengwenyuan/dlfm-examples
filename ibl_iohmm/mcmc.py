@@ -82,6 +82,7 @@ def iohmm_real_data_gibbs(
     ll_list[0] = test_iohmm.log_likelihood(test_observations, inputs=test_inputs)
 
     # Process remaining data sequentially
+    prev_most_likely_states = test_iohmm.most_likely_states(observations[0], input=initial_inputs[0])
     selected_inputs = []
     inputs = initial_inputs
     for t in range(T):
@@ -101,9 +102,9 @@ def iohmm_real_data_gibbs(
             obsparams_sampled, Ps_sampled, pi0_sampled, fit_ll, pzts_persample  = test_iohmm.fit(observations, inputs=inputs, method=method, **kwargs)
 
         # Find permutation and permute model
-        most_likely_states = test_iohmm.most_likely_states(observations[0], input=inputs[0])
+        curr_most_likely_states = test_iohmm.most_likely_states(observations[0], input=inputs[0])
         # Use current states for permutation
-        perm = find_permutation(most_likely_states[:len(observations[0])], most_likely_states, K, K)
+        perm = find_permutation(prev_most_likely_states, curr_most_likely_states[:-1], K, K)
         test_iohmm.permute(perm)
 
         obsparams_sampled = obsparams_sampled[:,perm,:]
@@ -124,17 +125,18 @@ def iohmm_real_data_gibbs(
 
         # To store selected inputs at each step
         selected_inputs.append(x_new)
+        prev_most_likely_states = curr_most_likely_states
 
     return pi0_list, Ps_list, obsparams_list, posteriorcov, ll_list, selected_inputs
 
 
-def run_5_fold_cv(input_features, observations, args):
+def run_n_fold_cv(input_features, observations, args):
     seed = args.seed
     num_gibbs_samples = args.num_gibbs_samples
     method = args.fitting_method
     
     total_trials = len(observations)
-    n_folds = 5
+    n_folds = 3
     fold_size = total_trials // n_folds
     
     for fold in range(n_folds):
@@ -212,7 +214,7 @@ def main(args: argparse.Namespace):
     npr.seed(seed)
     
     # Run 5-fold cross-validation
-    run_5_fold_cv(input_features, observations, args)
+    run_n_fold_cv(input_features, observations, args)
 
 
 if __name__ == "__main__":
@@ -221,8 +223,8 @@ if __name__ == "__main__":
                         help='Enter random seed')
     parser.add_argument('--fitting_method', type=str, default='gibbs_PG',
                         help='choose one of gibbs/gibbs_parallel/gibbs_PG')     
-    parser.add_argument('--num_gibbs_samples', type=int, default='5000')
-    parser.add_argument('--num_gibbs_burnin', type=int, default='1000')
+    parser.add_argument('--num_gibbs_samples', type=int, default='2000')
+    parser.add_argument('--num_gibbs_burnin', type=int, default='500')
 
     args = parser.parse_args()
     

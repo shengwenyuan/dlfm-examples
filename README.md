@@ -2,12 +2,16 @@
 
 ## prerequisites
 Python 3.9+  
+```
+$ sudo apt install python3.9  
+$ sudo apt install python3.9-dev  
+```
 
 ## install
 \# enter the directory with setup.py  
 ```
 $ pip install Cython, numpy
-$ sudo apt install python3.9-dev  
+
 $ pip install -e .  
 $ pip install cvxpy  
 $ pip install pypolyagamm` 
