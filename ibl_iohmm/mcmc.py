@@ -50,7 +50,7 @@ def iohmm_real_data_gibbs(
 
     M = initial_inputs[0].shape[1]
     T = len(remaining_inputs[0])
-    # T = 100
+    t_step = 10
 
     # Use real observations for initial samples
     init_time_bins = len(initial_inputs[0])
@@ -85,14 +85,15 @@ def iohmm_real_data_gibbs(
     prev_most_likely_states = test_iohmm.most_likely_states(observations[0], input=initial_inputs[0])
     selected_inputs = []
     inputs = initial_inputs
-    for t in range(T):
+    for t in range(0, T, t_step):
         print("Computing parameters of IO-HMM using "+str(t+1+init_time_bins)+" samples")
         # Get next real input and observation
-        x_new = remaining_inputs[0][t]
-        obs_new = remaining_observations[t].reshape(1, -1)
+        t_step = min(t_step, T-t)
+        x_new = remaining_inputs[0][t: t+t_step]
+        obs_new = remaining_observations[t: t+t_step].reshape(t_step, -1)
         
         # Append real data to the training set
-        inputs[0] = np.concatenate((inputs[0], x_new.reshape(1, -1)), axis=0)
+        inputs[0] = np.concatenate((inputs[0], x_new.reshape(t_step, -1)), axis=0)
         observations[0] = np.concatenate((observations[0], obs_new), axis=0)
 
         # Run inference using the extended dataset
@@ -104,7 +105,7 @@ def iohmm_real_data_gibbs(
         # Find permutation and permute model
         curr_most_likely_states = test_iohmm.most_likely_states(observations[0], input=inputs[0])
         # Use current states for permutation
-        perm = find_permutation(prev_most_likely_states, curr_most_likely_states[:-1], K, K)
+        perm = find_permutation(prev_most_likely_states, curr_most_likely_states[:-t_step], K, K)
         test_iohmm.permute(perm)
 
         obsparams_sampled = obsparams_sampled[:,perm,:]
