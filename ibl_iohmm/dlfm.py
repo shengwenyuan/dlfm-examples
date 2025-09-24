@@ -9,8 +9,48 @@ import seaborn as sns
 import os
 import time
 import argparse
+import ssm
+
 from scipy.optimize import linear_sum_assignment
+from scipy.special import logsumexp
 from ssm.util import find_permutation
+
+
+class HMM4eval:
+    def __init__(self, num_states, weights=None, transition_matrix=None, pi0=None):
+        self.K = num_states
+        self.weights = weights  # Shape: (K, n_features)
+        self.P_tr = transition_matrix  # Shape: (K, K)
+        if pi0 is None:
+            self.pi0 = np.ones(self.K) / self.K  # Uniform initial distribution
+        else:
+            self.pi0 = pi0
+    
+    def log_likelihood(self, observations, inputs):
+        assert self.weights is not None and self.P_tr is not None, "set ws and Ps"
+        T = len(observations)
+        eps = 1e-10
+        
+        # Using p(y=1|x,z_k) = 1 / (1 + exp(-x * theta_k))
+        log_emissions = np.zeros((T, self.K))
+        for k in range(self.K):
+            logits = inputs @ self.weights[k]
+            probs = 1 / (1 + np.exp(-logits))
+            # Bernoulli log-likelihood
+            log_emissions[:, k] = (observations * np.log(probs + eps) + 
+                                  (1 - observations) * np.log(1 - probs + eps))
+        
+        # Forward algorithm
+        log_alpha = np.zeros((T, self.K))
+        log_alpha[0] = np.log(self.pi0 + eps) + log_emissions[0]
+        for t in range(1, T):
+            for j in range(self.K):
+                # Using alpha_t = sum(alpha_{t-1} * a) * b
+                log_alpha[t, j] = logsumexp(
+                    log_alpha[t-1] + np.log(self.P_tr[:, j] + eps)
+                ) + log_emissions[t, j]
+        
+        return logsumexp(log_alpha[-1])
 
 sns.set_theme(style='ticks', font_scale=1.5)
 mpl.rcParams['text.usetex'] = True
@@ -19,13 +59,15 @@ mpl.rcParams['font.family'] = ['sans-serif']
 
 # * * * parameters of the GLM-HMM * * *
 num_factors = K = 3 # latent states
+input_dim = M = 4
+
 initial_trials = 100
 
 # * * * os dirs * * *
 root = os.path.dirname(os.path.abspath(__file__))
-data_dir = os.path.join(root, "output")
-input_features = np.load(os.path.join(data_dir, "input_matrix.npy"))
-observations = np.load(os.path.join(data_dir, "obs_gt.npy"))
+data_dir = os.path.join(root, "output", "ibl_data")
+input_features = np.load(os.path.join(data_dir, "input_features.npy"))
+observations = np.load(os.path.join(data_dir, "observations.npy"))
 print(f"Loaded data: inputs {input_features.shape}, observations {observations.shape}")
 additional_trials = T = observations.shape[0] - initial_trials
 output_dir = os.path.join(root, "output", "results_IOHMM", "dlfm", str(T+1))
@@ -74,7 +116,7 @@ def get_transition_probabilities(z, m):
     return p_tr_hat
 
 
-def iohmm_dlfm(num_samples, features, observations, labels):
+def iohmm_dlfm(num_samples, features, observations, prev_z=None):
     xs = features  # ndarray: dataset features
     ys = observations  # ndarray: dataset observations
     m = xs.shape[0]  # int: number of samples in the dataset
@@ -82,7 +124,7 @@ def iohmm_dlfm(num_samples, features, observations, labels):
     assert m == num_samples, f"trial number mismatch {m} != {num_samples}"
 
     # Hyperparameters
-    eps = 1e-6  # float: termination criterion
+    eps = 1e-5  # float: termination criterion
 
     # P-problem
     # K = 3
@@ -96,12 +138,12 @@ def iohmm_dlfm(num_samples, features, observations, labels):
     ztil = cp.Parameter((m, K), nonneg=True)
     Pobj = cp.sum(cp.multiply(ztil, cp.vstack(r).T))
     Preg = lbd_theta * cp.sum(cp.norm2(cp.vstack(thetas), axis=1))  # cp.Expression: regularization on model parameters
-    Pconstr = [
-        thetas[0][0] >= 0,
-        thetas[1][0] >= 0,
-        thetas[2][0] >= 0,
-    ]  # list of cp.Constraint objects: model parameter constraints
-    # Pconstr = None
+    # Pconstr = [
+    #     thetas[0][0] >= 0,
+    #     thetas[1][0] >= 0,
+    #     thetas[2][0] >= 0,
+    # ]  # list of cp.Constraint objects: model parameter constraints
+    Pconstr = None
     Pprob = cp.Problem(cp.Minimize(Pobj + Preg), Pconstr)
     assert Pprob.is_dcp()
 
@@ -123,74 +165,79 @@ def iohmm_dlfm(num_samples, features, observations, labels):
             ztil.value = np.random.dirichlet(np.ones(K), size=m)
         else:
             ztil.value = np.abs(z.value)
-        Pprob.solve(reduced_tol_gap_abs=5e-4, reduced_tol_gap_rel=5e-4)
+        Pprob.solve(reduced_tol_gap_abs=0.1, reduced_tol_gap_rel=0.1)
 
         rtil.value = cp.vstack(r).value
         # Fprob.solve()
-        Fprob.solve(reduced_tol_gap_abs=5e-4, reduced_tol_gap_rel=5e-4)
+        Fprob.solve(reduced_tol_gap_abs=0.1, reduced_tol_gap_rel=0.1)
 
-        print(f"Iteration {i}: P-problem value: {Pobj.value}, F-problem value: {Fobj.value}, gap: {np.abs(Pobj.value - Fobj.value)}.")
         if np.abs(Pobj.value - Fobj.value) < eps or i > 300:
             break
+    print(f"Iteration {i}: P-problem value: {Pobj.value}, F-problem value: {Fobj.value}, gap: {np.abs(Pobj.value - Fobj.value)}.")
 
-    perm = find_permutation(labels, np.argmax(z.value, axis=-1), K, K)
     thetas_val = np.array([theta.value for theta in thetas])
-    thetas_val = thetas_val[perm, :]
-    z_val = z.value[:, perm]
+    z_val = z.value
+    if prev_z is not None:
+        perm = find_permutation(np.argmax(prev_z, axis=-1), np.argmax(z.value, axis=-1)[:-1], K, K)
+        thetas_val = thetas_val[perm, :]
+        z_val = z_val[:, perm]
 
     return thetas_val, z_val
 
 
-def iohmm_dlfm_real_data(initial_inputs, initial_observations, remaining_inputs, remaining_observations):
-    """Use real IBL data with DLFM for fitting the model"""
-    
+def iohmm_dlfm_real_data(initial_inputs, initial_observations, remaining_inputs, remaining_observations, test_inputs, test_observations):
     print("Using real IBL data for IO-HMMs; using DLFM for fitting the model")
-    
     M = initial_inputs.shape[1]
     T = len(remaining_inputs)
     
-    # Start with initial data
     features = initial_inputs.copy()
     observations_data = initial_observations.copy()
-    
-    # Create dummy labels (we don't have ground truth labels for real data)
-    labels = np.zeros(len(initial_observations), dtype=int)
-    
     theta_list = []
     p_tr_hat_list = []
-    
-    # Process initial data
+    ll_list = []
+
+    # init a iohmm for log-likelihood computation
+    # eval_iohmm = ssm.HMM(num_factors, 1, input_dim, observations="input_driven_obs", 
+    #                     observation_kwargs=dict(C=2), transitions="standard")
+    eval_iohmm = HMM4eval(num_factors)
+
+    # Start with initial data
     num_samples = len(initial_observations)
-    thetas_val, z_val = iohmm_dlfm(num_samples, features, observations_data, labels)
+    thetas_val, z_val = iohmm_dlfm(num_samples, features, observations_data)
     theta_list.append(thetas_val)
     p_tr_hat_list.append(get_transition_probabilities(z_val, num_samples))
     
     # Process remaining data sequentially
-    for t in range(min(100, T)):  # Limit to 100 additional trials for efficiency
-        print(f"Processing trial {t+1}/{min(100, T)}")
-        
+    for t in range(T):
+        print(f"Processing trial {t+1}/{T}")
+        prev_z = z_val
         # Add next real data point
         x_new = remaining_inputs[t]
         obs_new = remaining_observations[t]
         
         features = np.vstack([features, x_new])
         observations_data = np.append(observations_data, obs_new)
-        labels = np.append(labels, 0)  # Dummy label
         
         num_samples = len(observations_data)
-        thetas_val, z_val = iohmm_dlfm(num_samples, features, observations_data, labels)
+        thetas_val, z_val = iohmm_dlfm(num_samples, features, observations_data, prev_z)
+        ptr_hat = get_transition_probabilities(z_val, num_samples)
+        # eval_iohmm.observations.params = thetas_val.reshape(K, 1, M)
+        # eval_iohmm.transitions.params = (ptr_hat)
+        eval_iohmm.weights = thetas_val
+        eval_iohmm.P_tr = ptr_hat
+        test_ll = eval_iohmm.log_likelihood(test_observations, inputs=test_inputs)
+
         theta_list.append(thetas_val)
-        p_tr_hat_list.append(get_transition_probabilities(z_val, num_samples))
-    
-    return theta_list, p_tr_hat_list
+        p_tr_hat_list.append(ptr_hat)
+        ll_list.append(test_ll)
+
+    return theta_list, p_tr_hat_list, ll_list
 
 
-def run_5_fold_cv(input_features, observations, args):
-    """Run 5-fold cross-validation on the IBL data using DLFM"""
-    
+def run_n_fold_cv(input_features, observations, args):
     seed = args.seed
     total_trials = len(observations)
-    n_folds = 5
+    n_folds = 3
     fold_size = total_trials // n_folds
     
     for fold in range(n_folds):
@@ -221,12 +268,13 @@ def run_5_fold_cv(input_features, observations, args):
         initial_observations = train_observations[:initial_trials]
         remaining_inputs = train_inputs[initial_trials:]
         remaining_observations = train_observations[initial_trials:]
-        
+
         # Start timing
         start_time = time.time()
         
         # Train using DLFM with real data
-        theta_list, p_tr_hat_list = iohmm_dlfm_real_data(initial_inputs, initial_observations, remaining_inputs, remaining_observations)
+        theta_list, p_tr_hat_list, ll_list = \
+            iohmm_dlfm_real_data(initial_inputs, initial_observations, remaining_inputs, remaining_observations, test_inputs, test_observations)
         
         # End timing
         end_time = time.time()
@@ -236,6 +284,7 @@ def run_5_fold_cv(input_features, observations, args):
         fold_output_dir = os.path.join(output_dir, f"fold_{fold}")
         os.makedirs(fold_output_dir, exist_ok=True)
         
+        np.save(os.path.join(fold_output_dir, f"ibl_dlfm_lls_atseed{seed}.npy"), ll_list)
         np.save(os.path.join(fold_output_dir, f"ibl_dlfm_weights_atseed{seed}.npy"), theta_list)
         np.save(os.path.join(fold_output_dir, f"ibl_dlfm_Ps_atseed{seed}.npy"), p_tr_hat_list)
         np.save(os.path.join(fold_output_dir, f"ibl_dlfm_total_time_atseed{seed}.npy"), total_time)
@@ -249,15 +298,12 @@ def main(args):
     seed = args.seed
     np.random.seed(seed)
     
-    # Run 5-fold cross-validation
-    run_5_fold_cv(input_features, observations, args)
+    run_n_fold_cv(input_features, observations, args)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run IOHMM dlfm experiments')
     parser.add_argument('--seed', type=int, default='0',
                         help='Enter random seed')
-
     args = parser.parse_args()
-    
     main(args)

@@ -13,7 +13,7 @@ mpl.rcParams['font.family'] = ['sans-serif']
 cols_traces = ['#BE1F24', '#2E3192', '#1f77b4', '#ff7f0e', '#2ca02c']
 
 root = os.path.dirname(os.path.abspath(__file__))
-ibl_dir = os.path.join(root, "output", "results_IOHMM/mcmc/795")
+ibl_dir = os.path.join(root, "output", "results_IOHMM")
 graph_dir = os.path.join(root, "figs")
 os.makedirs(graph_dir, exist_ok=True)
 
@@ -25,20 +25,21 @@ input_dim = 4         # input dimensions = [stimulus = contrastRight - contrastL
                                             #prev_choice = _ibl_trials.choice, 
                                             #prev_stimulus_side(win-stay, lose-switch) = prev_contrastR/L]
 initial_trials = 100
-n_folds = 4
+n_folds = 1
+mcmc_downsample_step = 10
 num_gibbs_samples = 5000
 
 
 def load_mcmc_data():
-    """Load MCMC log-likelihood data from all folds"""
+    mcmc_dir = os.path.join(ibl_dir, "mcmc", "795")
     null_ll_per_trial = np.log(0.5)
     ll_data = {}
     
     for fold in range(n_folds):
-        fold_dir = os.path.join(ibl_dir, f"fold_{fold}")
+        fold_dir = os.path.join(mcmc_dir, f"fold_{fold}")
         ll = np.load(os.path.join(fold_dir, f"ibl_gibbs_PG_LL_atseed0_gibbs_{num_gibbs_samples}.npy"))
-        ps = np.load(os.path.join(fold_dir, f"ibl_gibbs_PG_Ps_atseed0_gibbs_{num_gibbs_samples}.npy"))
-        n_trials = ps.shape[0]
+        n_trials = ll.shape[0]
+        ll = np.concatenate([[ll[0]], ll[1::mcmc_downsample_step]])
         ll_bits = ll / (np.log(2) * n_trials)
         relative_ll = (ll / n_trials) - null_ll_per_trial
         
@@ -53,12 +54,7 @@ def load_mcmc_data():
 
 
 def load_dlfm_data():
-    """Load DLFM log-likelihood data from all folds (if available)"""
-    # Check if DLFM results directory exists
-    dlfm_dir = os.path.join(root, "output", "results_IOHMM/dlfm/795")
-    if not os.path.exists(dlfm_dir):
-        print(f"DLFM directory not found: {dlfm_dir}")
-        return None
+    dlfm_dir = os.path.join(ibl_dir, "dlfm", "795")
     
     null_ll_per_trial = np.log(0.5)
     ll_data = {}
@@ -70,13 +66,11 @@ def load_dlfm_data():
             continue
             
         # Try to find DLFM log-likelihood files
-        ll_file = os.path.join(fold_dir, f"ibl_dlfm_LL_atseed0.npy")
-        ps_file = os.path.join(fold_dir, f"ibl_dlfm_Ps_atseed0.npy")
+        ll_file = os.path.join(fold_dir, f"ibl_dlfm_lls_atseed0.npy")
         
-        if os.path.exists(ll_file) and os.path.exists(ps_file):
+        if os.path.exists(ll_file):
             ll = np.load(ll_file)
-            ps = np.load(ps_file)
-            n_trials = ps.shape[0]
+            n_trials = ll.shape[0]
             ll_bits = ll / (np.log(2) * n_trials)
             relative_ll = (ll / n_trials) - null_ll_per_trial
             
@@ -91,14 +85,20 @@ def load_dlfm_data():
 
 
 def plot_mcmc_only():
-    """Plot MCMC log-likelihood curves by folds"""
     mcmc_data = load_mcmc_data()
     
     fig, ax = plt.subplots(figsize=(8, 6))
     
     for fold in range(n_folds):
         data = mcmc_data[fold]
-        trials = np.arange(len(data['relative_ll'])) + initial_trials
+        # Create proper x-axis considering mcmc_downsample_step
+        # First point is at initial_trials, then every mcmc_downsample_step after that
+        n_points = len(data['relative_ll'])
+        trials = np.zeros(n_points)
+        trials[0] = initial_trials  # First point
+        for i in range(1, n_points):
+            trials[i] = initial_trials + i * mcmc_downsample_step
+        
         # Apply smoothing
         relative_ll_smooth = np.convolve(data['relative_ll'], np.ones(5)/5, mode='valid')
         trials_smooth = trials[:len(relative_ll_smooth)]
@@ -161,7 +161,13 @@ def plot_comprehensive_comparison():
     # Add MCMC data
     for fold in range(n_folds):
         data = mcmc_data[fold]
-        trials = np.arange(len(data['relative_ll'])) + initial_trials
+        # Create proper x-axis considering mcmc_downsample_step
+        n_points = len(data['relative_ll'])
+        trials = np.zeros(n_points)
+        trials[0] = initial_trials  # First point
+        for i in range(1, n_points):
+            trials[i] = initial_trials + i * mcmc_downsample_step
+        
         # Apply smoothing
         relative_ll_smooth = np.convolve(data['relative_ll'], np.ones(5)/5, mode='valid')
         trials_smooth = trials[:len(relative_ll_smooth)]
@@ -245,7 +251,7 @@ def print_summary_stats():
 
 
 if __name__ == "__main__":
-    print_summary_stats()
+    # print_summary_stats()
     plot_mcmc_only()
     # plot_dlfm_only()
     # plot_comprehensive_comparison()
