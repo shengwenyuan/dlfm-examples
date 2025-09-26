@@ -9,7 +9,6 @@ import seaborn as sns
 import os
 import time
 import argparse
-import ssm
 
 from scipy.optimize import linear_sum_assignment
 from scipy.special import logsumexp
@@ -124,7 +123,7 @@ def iohmm_dlfm(num_samples, features, observations, prev_z=None):
     assert m == num_samples, f"trial number mismatch {m} != {num_samples}"
 
     # Hyperparameters
-    eps = 1e-5  # float: termination criterion
+    eps = 1e-4  # float: termination criterion
 
     # P-problem
     # K = 3
@@ -138,12 +137,12 @@ def iohmm_dlfm(num_samples, features, observations, prev_z=None):
     ztil = cp.Parameter((m, K), nonneg=True)
     Pobj = cp.sum(cp.multiply(ztil, cp.vstack(r).T))
     Preg = lbd_theta * cp.sum(cp.norm2(cp.vstack(thetas), axis=1))  # cp.Expression: regularization on model parameters
-    # Pconstr = [
-    #     thetas[0][0] >= 0,
-    #     thetas[1][0] >= 0,
-    #     thetas[2][0] >= 0,
-    # ]  # list of cp.Constraint objects: model parameter constraints
-    Pconstr = None
+    Pconstr = [
+        thetas[0][0] <= 0,
+        thetas[1][0] <= 0,
+        thetas[2][0] <= 0,
+    ]  # list of cp.Constraint objects: model parameter constraints
+    # Pconstr = None
     Pprob = cp.Problem(cp.Minimize(Pobj + Preg), Pconstr)
     assert Pprob.is_dcp()
 
@@ -165,13 +164,43 @@ def iohmm_dlfm(num_samples, features, observations, prev_z=None):
             ztil.value = np.random.dirichlet(np.ones(K), size=m)
         else:
             ztil.value = np.abs(z.value)
-        Pprob.solve(reduced_tol_gap_abs=0.1, reduced_tol_gap_rel=0.1)
+        # Pprob.solve(reduced_tol_gap_abs=1e-4, reduced_tol_gap_rel=1e-4)
+        try:
+            Pprob.solve(
+                solver=cp.CLARABEL, 
+                max_iter=1000, 
+                tol_gap_abs=eps*0.1,
+                tol_gap_rel=eps*0.1,
+                reduced_tol_gap_abs=eps, 
+                reduced_tol_gap_rel=eps
+            )
+        except cp.SolverError:
+            try:
+                Pprob.solve(solver=cp.SCS, max_iters=5000, eps=eps*0.1, normalize=True)
+                print(f"Iteration {i}: <solver=SCS> P-problem value: {Pobj.value}.")
+            except cp.SolverError:
+                print(f"Iteration {i}: F-problem failed to solve.")
+                continue
 
         rtil.value = cp.vstack(r).value
-        # Fprob.solve()
-        Fprob.solve(reduced_tol_gap_abs=0.1, reduced_tol_gap_rel=0.1)
+        try:
+            Fprob.solve(
+                solver=cp.CLARABEL, 
+                max_iter=1000, 
+                tol_gap_abs=eps*0.1,
+                tol_gap_rel=eps*0.1,
+                reduced_tol_gap_abs=eps, 
+                reduced_tol_gap_rel=eps
+            )
+        except cp.SolverError:
+            try:
+                Fprob.solve(solver=cp.SCS, max_iters=5000, eps=eps*0.1, normalize=True)
+                print(f"Iteration {i}: <solver=SCS> F-problem value: {Fobj.value}.")
+            except cp.SolverError:
+                print(f"Iteration {i}: F-problem failed to solve.")
+                continue
 
-        if np.abs(Pobj.value - Fobj.value) < eps or i > 300:
+        if np.abs(Pobj.value - Fobj.value) < eps or i > 150:
             break
     print(f"Iteration {i}: P-problem value: {Pobj.value}, F-problem value: {Fobj.value}, gap: {np.abs(Pobj.value - Fobj.value)}.")
 
@@ -197,8 +226,6 @@ def iohmm_dlfm_real_data(initial_inputs, initial_observations, remaining_inputs,
     ll_list = []
 
     # init a iohmm for log-likelihood computation
-    # eval_iohmm = ssm.HMM(num_factors, 1, input_dim, observations="input_driven_obs", 
-    #                     observation_kwargs=dict(C=2), transitions="standard")
     eval_iohmm = HMM4eval(num_factors)
 
     # Start with initial data
@@ -219,10 +246,9 @@ def iohmm_dlfm_real_data(initial_inputs, initial_observations, remaining_inputs,
         observations_data = np.append(observations_data, obs_new)
         
         num_samples = len(observations_data)
+        # if t < 312: continue
         thetas_val, z_val = iohmm_dlfm(num_samples, features, observations_data, prev_z)
         ptr_hat = get_transition_probabilities(z_val, num_samples)
-        # eval_iohmm.observations.params = thetas_val.reshape(K, 1, M)
-        # eval_iohmm.transitions.params = (ptr_hat)
         eval_iohmm.weights = thetas_val
         eval_iohmm.P_tr = ptr_hat
         test_ll = eval_iohmm.log_likelihood(test_observations, inputs=test_inputs)
@@ -242,6 +268,7 @@ def run_n_fold_cv(input_features, observations, args):
     
     for fold in range(n_folds):
         print(f"\n=== Processing Fold {fold + 1}/{n_folds} ===")
+        # if fold==0: continue
         
         # Split data into train and test
         test_start = fold * fold_size
@@ -303,7 +330,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run IOHMM dlfm experiments')
-    parser.add_argument('--seed', type=int, default='0',
+    parser.add_argument('--seed', type=int, default='1',
                         help='Enter random seed')
     args = parser.parse_args()
     main(args)
