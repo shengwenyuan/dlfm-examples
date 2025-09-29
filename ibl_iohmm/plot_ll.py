@@ -25,10 +25,10 @@ input_dim = 4         # input dimensions = [stimulus = contrastRight - contrastL
                                             #prev_choice = _ibl_trials.choice, 
                                             #prev_stimulus_side(win-stay, lose-switch) = prev_contrastR/L]
 initial_trials = 100
-n_folds = 1
-mcmc_downsample_step = 10
-num_gibbs_samples = 5000
-
+n_folds = 3
+mcmc_downsample_step = 1
+num_gibbs_samples = 2000
+seed = 1
 
 def load_mcmc_data():
     mcmc_dir = os.path.join(ibl_dir, "mcmc", "795")
@@ -37,7 +37,7 @@ def load_mcmc_data():
     
     for fold in range(n_folds):
         fold_dir = os.path.join(mcmc_dir, f"fold_{fold}")
-        ll = np.load(os.path.join(fold_dir, f"ibl_gibbs_PG_LL_atseed0_gibbs_{num_gibbs_samples}.npy"))
+        ll = np.load(os.path.join(fold_dir, f"ibl_gibbs_PG_LL_atseed{seed}_gibbs_{num_gibbs_samples}.npy"))
         n_trials = ll.shape[0]
         ll = np.concatenate([[ll[0]], ll[1::mcmc_downsample_step]])
         ll_bits = ll / (np.log(2) * n_trials)
@@ -66,7 +66,7 @@ def load_dlfm_data():
             continue
             
         # Try to find DLFM log-likelihood files
-        ll_file = os.path.join(fold_dir, f"ibl_dlfm_lls_atseed0.npy")
+        ll_file = os.path.join(fold_dir, f"ibl_dlfm_lls_atseed{seed}.npy")
         
         if os.path.exists(ll_file):
             ll = np.load(ll_file)
@@ -113,7 +113,7 @@ def plot_mcmc_only():
     ax.legend()
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(graph_dir, f"mcmc_ll_{n_folds}folds.png"), dpi=400)
+    plt.savefig(os.path.join(graph_dir, f"mcmc_ll_{n_folds}folds_seed{seed}.png"), dpi=400)
     plt.show()
 
 
@@ -146,7 +146,7 @@ def plot_dlfm_only():
     ax.legend()
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(graph_dir, f"dlfm_ll_by_folds_{n_folds}folds.png"), dpi=400)
+    plt.savefig(os.path.join(graph_dir, f"dlfm_ll_by_folds_{n_folds}folds_seed{seed}.png"), dpi=400)
     plt.show()
 
 
@@ -221,7 +221,7 @@ def plot_comprehensive_comparison():
     ax.set_ylabel('Relative Log-Likelihood')
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(graph_dir, f"comprehensive_ll_comparison_{n_folds}folds.png"), dpi=400)
+    plt.savefig(os.path.join(graph_dir, f"comprehensive_ll_comparison_{n_folds}folds_seed{seed}.png"), dpi=400)
     plt.show()
 
 
@@ -252,6 +252,6 @@ def print_summary_stats():
 
 if __name__ == "__main__":
     # print_summary_stats()
-    plot_mcmc_only()
-    # plot_dlfm_only()
+    # plot_mcmc_only()
+    plot_dlfm_only()
     # plot_comprehensive_comparison()
