@@ -4,14 +4,12 @@ import random
 import ssm
 import time
 import argparse
-import multiprocessing as mp
 import os
-import scipy.stats as st
 
 from ssm.input_selection import input_selection
 from ssm.util import one_hot, find_permutation, permute_params
 
-# * * * Set the parameters of the GLM-HMM * * *
+# * * * Set hyper-parameters of the GLM-HMM * * *
 num_states = K = 3    # number of discrete states = [engaged, disengaged, right/left-bias]
 obs_dim = 1           # number of observed dimensions
 num_categories = 2    # number of categories for output = [0, 1(rightward choice=_ibl_trials.choice=1)]
@@ -143,15 +141,12 @@ def run_n_fold_cv(input_features, observations, args):
     for fold in range(n_folds):
         print(f"\n=== Processing Fold {fold + 1}/{n_folds} ===")
         
-        # Split data into train and test
         test_start = fold * fold_size
         test_end = (fold + 1) * fold_size if fold < n_folds - 1 else total_trials
         
-        # Test data for this fold
         test_inputs = input_features[test_start:test_end]
         test_observations = observations[test_start:test_end][:, np.newaxis]
         
-        # Training data (all other folds)
         train_inputs = np.concatenate([
             input_features[:test_start], 
             input_features[test_end:]
@@ -177,7 +172,7 @@ def run_n_fold_cv(input_features, observations, args):
         trans_init = 0.95 * np.eye(K) + \
            np.abs(np.random.multivariate_normal(mean=np.zeros(K*K), cov=0.05 * np.eye(K*K)).reshape(K, K))
         trans_init = trans_init / trans_init.sum(axis=1, keepdims=True)
-        # test_iohmm.transitions.params = np.log(trans_init[np.newaxis, :])
+        # test_iohmm.transitions.params = np.log(trans_init[np.newaxis, :]) # init like [Zoe C. Ashwood]
 
         start_time = time.time()
         if method=='gibbs':

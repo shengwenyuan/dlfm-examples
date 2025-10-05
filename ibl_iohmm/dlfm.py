@@ -10,7 +10,6 @@ import os
 import time
 import argparse
 
-from scipy.optimize import linear_sum_assignment
 from scipy.special import logsumexp
 from ssm.util import find_permutation
 
@@ -126,7 +125,6 @@ def iohmm_dlfm(num_samples, features, observations, prev_z=None):
     eps = 1e-4  # float: termination criterion
 
     # P-problem
-    # K = 3
     lbd_theta = 0.5  # regularization weight
     thetas = []  # list of cp.Variable objects: model parameters; here is weights
     r = []  # list of cp.Expression objects: loss functions
@@ -164,7 +162,6 @@ def iohmm_dlfm(num_samples, features, observations, prev_z=None):
             ztil.value = np.random.dirichlet(np.ones(K), size=m)
         else:
             ztil.value = np.abs(z.value)
-        # Pprob.solve(reduced_tol_gap_abs=1e-4, reduced_tol_gap_rel=1e-4)
         try:
             Pprob.solve(
                 solver=cp.CLARABEL, 
@@ -215,7 +212,6 @@ def iohmm_dlfm(num_samples, features, observations, prev_z=None):
 
 
 def iohmm_dlfm_real_data(initial_inputs, initial_observations, remaining_inputs, remaining_observations, test_inputs, test_observations):
-    print("Using real IBL data for IO-HMMs; using DLFM for fitting the model")
     M = initial_inputs.shape[1]
     T = len(remaining_inputs)
     
@@ -228,13 +224,11 @@ def iohmm_dlfm_real_data(initial_inputs, initial_observations, remaining_inputs,
     # init a iohmm for log-likelihood computation
     eval_iohmm = HMM4eval(num_factors)
 
-    # Start with initial data
     num_samples = len(initial_observations)
     thetas_val, z_val = iohmm_dlfm(num_samples, features, observations_data)
     theta_list.append(thetas_val)
     p_tr_hat_list.append(get_transition_probabilities(z_val, num_samples))
     
-    # Process remaining data sequentially
     for t in range(T):
         print(f"Processing trial {t+1}/{T}")
         prev_z = z_val
@@ -246,7 +240,6 @@ def iohmm_dlfm_real_data(initial_inputs, initial_observations, remaining_inputs,
         observations_data = np.append(observations_data, obs_new)
         
         num_samples = len(observations_data)
-        # if t < 312: continue
         thetas_val, z_val = iohmm_dlfm(num_samples, features, observations_data, prev_z)
         ptr_hat = get_transition_probabilities(z_val, num_samples)
         eval_iohmm.weights = thetas_val
@@ -268,17 +261,13 @@ def run_n_fold_cv(input_features, observations, args):
     
     for fold in range(n_folds):
         print(f"\n=== Processing Fold {fold + 1}/{n_folds} ===")
-        # if fold==0: continue
         
-        # Split data into train and test
         test_start = fold * fold_size
         test_end = (fold + 1) * fold_size if fold < n_folds - 1 else total_trials
-        
-        # Test data for this fold
+
         test_inputs = input_features[test_start:test_end]
         test_observations = observations[test_start:test_end]
         
-        # Training data (all other folds)
         train_inputs = np.concatenate([
             input_features[:test_start], 
             input_features[test_end:]
@@ -287,7 +276,6 @@ def run_n_fold_cv(input_features, observations, args):
             observations[:test_start], 
             observations[test_end:]
         ], axis=0)
-        
         print(f"Train: {train_inputs.shape}, Test: {test_inputs.shape}")
         
         # Further split training data into initial and remaining
@@ -296,26 +284,18 @@ def run_n_fold_cv(input_features, observations, args):
         remaining_inputs = train_inputs[initial_trials:]
         remaining_observations = train_observations[initial_trials:]
 
-        # Start timing
         start_time = time.time()
-        
-        # Train using DLFM with real data
         theta_list, p_tr_hat_list, ll_list = \
             iohmm_dlfm_real_data(initial_inputs, initial_observations, remaining_inputs, remaining_observations, test_inputs, test_observations)
-        
-        # End timing
         end_time = time.time()
         total_time = end_time - start_time
         
-        # Save results for this fold
         fold_output_dir = os.path.join(output_dir, f"fold_{fold}")
         os.makedirs(fold_output_dir, exist_ok=True)
-        
         np.save(os.path.join(fold_output_dir, f"ibl_dlfm_lls_atseed{seed}.npy"), ll_list)
         np.save(os.path.join(fold_output_dir, f"ibl_dlfm_weights_atseed{seed}.npy"), theta_list)
         np.save(os.path.join(fold_output_dir, f"ibl_dlfm_Ps_atseed{seed}.npy"), p_tr_hat_list)
         np.save(os.path.join(fold_output_dir, f"ibl_dlfm_total_time_atseed{seed}.npy"), total_time)
-        
         print(f"Fold {fold + 1} completed. Time taken: {total_time:.2f} seconds")
     
     print(f"\nAll folds completed!")
