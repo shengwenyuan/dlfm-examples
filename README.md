@@ -14,7 +14,7 @@ $ pip install Cython, numpy
 
 $ pip install -e .  
 $ pip install cvxpy  
-$ pip install pypolyagamm` 
+$ pip install pypolyagamm  
 ```
 
 ## Contact
