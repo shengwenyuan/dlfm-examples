@@ -14,11 +14,9 @@ mpl.rcParams['mathtext.fontset'] = 'cm'
 mpl.rcParams['font.family'] = ['sans-serif']
 
 # generate dataset
-# K = 2
 K = 3
 initial_trials = 100
 additional_trials = T = 1000
-# num_features = 2
 num_features = 10
 sigma = 1.5
 
@@ -84,7 +82,7 @@ def mglm_dlfm(features, observations, labels):
     n = xs.shape[1]
 
     ### hyperparameters
-    eps = 1e-6  # float: termination criterion TODO: raise?
+    eps = 1e-6  # float: termination criterion
 
     ### P-problem
     thetas = []  # list of cp.Variable objects: model parameters
@@ -128,7 +126,7 @@ def mglm_dlfm(features, observations, labels):
         # Fprob.solve(reduced_tol_gap_abs=5e-4, reduced_tol_gap_rel=5e-4)
 
         print(f'Iteration {i}: P-problem value: {Pobj.value}, F-problem value: {Fobj.value}, gap: {np.abs(Pobj.value - Fobj.value)}.')
-        if np.abs(Pobj.value - Fobj.value) < eps or i > 300: # TODO: set max iterations
+        if np.abs(Pobj.value - Fobj.value) < eps or i > 300: 
             break
 
     # permuting
@@ -143,10 +141,6 @@ def mglm_dlfm(features, observations, labels):
     return thetas_val, z_val
 
 def main(seed):
-    # components = [
-    #     {'coef': np.array([3, -6]), 'p': 0.6},
-    #     {'coef': np.array([3, 6]), 'p': 0.4},
-    # ]
     components = [
     {'coef': np.array([-1.47, 0.07, 0.16, -2.02, 0.14, 0.33, 0.71, 0.80, 1.53, -0.26]), 'p': 0.4},
     {'coef': np.array([-0.12, 1.38, -1.25, 0.88, -0.80, 1.33, -1.43, -0.42, 0.90, -0.47]), 'p': 0.3},
@@ -202,6 +196,6 @@ def main(seed):
 
 
 if __name__ == "__main__":
-    seed = 0
+    seed = 2
     np.random.seed(seed)
     main(seed)

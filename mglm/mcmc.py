@@ -5,7 +5,6 @@ import os
 import time
 from scipy.optimize import linear_sum_assignment
 from utils_mglm.mglms import MGLM 
-# from mglm_random import mglm_random
 
 
 parser = argparse.ArgumentParser(description='Run MLR experiments')
@@ -16,15 +15,11 @@ seed = args.seed
 np.random.seed(seed)
 
 # * * * Set parameters of MGLM * * *
-# num_states = 2  # number of discrete states
 num_states = 3  # number of discrete states
 obs_dim = 1  # data dimension
-# input_dim = 2 # input dimension
 input_dim = 10 # input dimension
 num_categories = 2 # binary output for now
 sigma = 1.5
-# num_gibbs_burnin = 150
-# num_gibbs_samples = 300
 num_gibbs_burnin = 500
 num_gibbs_samples = 2000
 
@@ -145,8 +140,6 @@ def mglm_random(seed, T, initial_inputs, K, true_mglm, test_mglm, input_list, bu
 
 
 ## Set parameters
-# true_pi0 = np.array([0.6, 0.4])
-# true_weights = np.array([[3,-6], [3, 6]])
 true_pi0 = np.array([0.4, 0.3, 0.3])
 true_weights = np.array([[-1.47, 0.07, 0.16, -2.02, 0.14, 0.33, 0.71, 0.80, 1.53, -0.26], 
                          [-0.12, 1.38, -1.25, 0.88, -0.80, 1.33, -1.43, -0.42, 0.90, -0.47],
