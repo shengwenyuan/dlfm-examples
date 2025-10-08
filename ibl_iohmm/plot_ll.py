@@ -94,7 +94,7 @@ def load_dlfm_data_all_seeds():
                 for trial, rel_ll in zip(trials_smooth, relative_ll_smooth):
                     all_data.append({
                         'trial #': trial,
-                        'Method': 'DLFM',
+                        'Method': 'MCP',
                         'Fold': fold,
                         'Seed': seed,
                         'Relative Log-Likelihood': rel_ll
@@ -128,11 +128,11 @@ def plot_mcmc_only():
 
 
 def plot_dlfm_only():
-    """Plot DLFM log-likelihood curves with confidence intervals across seeds"""
+    """Plot MCP log-likelihood curves with confidence intervals across seeds"""
     dlfm_data = load_dlfm_data_all_seeds()
     
     if dlfm_data is None:
-        print("DLFM data not available. Skipping DLFM-only plot.")
+        print("MCP data not available. Skipping MCP-only plot.")
         return
     
     df = pd.DataFrame(dlfm_data)
@@ -140,11 +140,11 @@ def plot_dlfm_only():
     
     sns.lineplot(x="trial #", y="Relative Log-Likelihood", 
                 data=df, ax=ax, color=cols_traces[0], 
-                linewidth=2, alpha=0.8, label='DLFM')
+                linewidth=2, alpha=0.8, label='MCP')
     
     ax.set_xlabel('Trial #')
     ax.set_ylabel('Relative Log-Likelihood')
-    ax.set_title('DLFM Log-Likelihood with Confidence Intervals')
+    ax.set_title('MCP Log-Likelihood with Confidence Intervals')
     ax.legend()
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -178,9 +178,9 @@ def plot_comprehensive_comparison():
         ax.set_title('MCMC Log-Likelihood')
     elif dlfm_data:
         sns.lineplot(x="trial #", y="Relative Log-Likelihood", 
-                    data=df[df['Method'] == 'DLFM'], ax=ax, 
-                    color=cols_traces[0], linewidth=2, alpha=0.8, label='DLFM', errorbar=('ci', 68))
-        ax.set_title('DLFM Log-Likelihood')
+                    data=df[df['Method'] == 'MCP'], ax=ax, 
+                    color=cols_traces[0], linewidth=2, alpha=0.8, label='MCP', errorbar=('ci', 68))
+        ax.set_title('MCP Log-Likelihood')
     
     ax.set_xlabel('Trial #')
     ax.set_ylabel('Relative Log-Likelihood')
@@ -265,7 +265,7 @@ def print_timing_comparison():
                 n_trials = ll_data.shape[0]
                 seed_dlfm_times.append(time_val)
                 seed_dlfm_trial_counts.append(n_trials)
-                print(f"DLFM - Seed {seed}, Fold {fold}: {time_val:.2f} seconds ({time_val/60:.2f} minutes), {n_trials} trials")
+                print(f"MCP - Seed {seed}, Fold {fold}: {time_val:.2f} seconds ({time_val/60:.2f} minutes), {n_trials} trials")
         
         if seed_dlfm_times:
             dlfm_times.extend(seed_dlfm_times)
@@ -307,8 +307,8 @@ def print_timing_comparison():
         avg_dlfm = np.mean(dlfm_times)
         speedup = avg_mcmc / avg_dlfm
         print(f"\n=== Speedup Analysis ===")
-        print(f"DLFM is {speedup:.2f}x {'faster' if speedup > 1 else 'slower'} than MCMC")
-        print(f"MCMC/DLFM time ratio: {speedup:.2f}")
+        print(f"MCP is {speedup:.2f}x {'faster' if speedup > 1 else 'slower'} than MCMC")
+        print(f"MCMC/MCP time ratio: {speedup:.2f}")
         
         # Per-trial speedup
         mcmc_per_trial = avg_mcmc / np.mean(mcmc_trial_counts)

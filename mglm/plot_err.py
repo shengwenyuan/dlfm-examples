@@ -60,7 +60,7 @@ def plot_rmse_w():
     sns.lineplot(x="trial \#", y="RMSE ($\{w_k\}_{k=1}^K$)", hue="Method", data=df, ax=ax, palette=cols_traces, linewidth=2, alpha=0.8, errorbar=('ci', 68))
     handles, labels = ax.get_legend_handles_labels()
     # Update method names for better display
-    updated_labels = ['DLFM' if label == 'dlfm' else 'MCMC' if label == 'random' else label for label in labels]
+    updated_labels = ['MCP' if label == 'dlfm' else 'MCMC' if label == 'random' else label for label in labels]
     ax.legend(handles=handles, labels=updated_labels, loc='upper right')
     plt.xticks()
     plt.yticks()
@@ -91,7 +91,7 @@ def plot_rmse_pi():
     sns.lineplot(x="trial \#", y="RMSE (A)", hue="Method", data=df, ax=ax, palette=cols_traces, linewidth=2, alpha=0.8, errorbar=('ci', 68))
     handles, labels = ax.get_legend_handles_labels()
     # Update method names for better display
-    updated_labels = ['DLFM' if label == 'dlfm' else 'MCMC' if label == 'random' else label for label in labels]
+    updated_labels = ['MCP' if label == 'dlfm' else 'MCMC' if label == 'random' else label for label in labels]
     ax.legend(handles=handles, labels=updated_labels, loc='upper right')
     plt.xticks()
     plt.yticks()
@@ -123,14 +123,14 @@ def plot_input_selection():
     fig, ax1 = plt.subplots(figsize=(6, 5), facecolor='white')
     bins = np.arange(-10, 10, 0.5)
     
-    ax1.hist(selected_inputs_dlfm, alpha=0.7, color=cols_traces[0], label='DLFM', bins=bins)
+    ax1.hist(selected_inputs_dlfm, alpha=0.7, color=cols_traces[0], label='MCP', bins=bins)
     ax1.hist(selected_inputs_mcmc, alpha=0.7, color=cols_traces[1], label='MCMC', bins=bins)
     ax1.set_xlabel("input")
     ax1.set_ylabel("frequency")
     
     ax2 = ax1.twinx()
     for k in range(num_states):
-        ax2.plot(xgrid, ygrid[k], linewidth=3, color='gray', alpha=0.3, zorder=1)
+        ax2.plot(xgrid, ygrid[k], linewidth=3, color='gray', alpha=0.8, zorder=1)
     ax2.set_ylabel("$p(y=1|x)$")
     
     ax1.set_zorder(ax2.get_zorder() + 1)
@@ -158,15 +158,15 @@ def print_total_times():
         print(f"  MCMC: {mcmc_time:.2f} seconds ({mcmc_time/60:.2f} minutes)")
         dlfm_time = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_total_time_atseed{seed}.npy"))
         dlfm_times.append(dlfm_time)
-        print(f"  DLFM: {dlfm_time:.2f} seconds ({dlfm_time/60:.2f} minutes)")
+        print(f"  MCP: {dlfm_time:.2f} seconds ({dlfm_time/60:.2f} minutes)")
     
     avg_mcmc = np.mean(mcmc_times)
     avg_dlfm = np.mean(dlfm_times)
     print(f"\nAverage MCMC time: {avg_mcmc:.2f} seconds ({avg_mcmc/60:.2f} minutes)")
-    print(f"Average DLFM time: {avg_dlfm:.2f} seconds ({avg_dlfm/60:.2f} minutes)")
+    print(f"Average MCP time: {avg_dlfm:.2f} seconds ({avg_dlfm/60:.2f} minutes)")
     
     speedup = avg_mcmc / avg_dlfm
-    print(f"DLFM speedup: {speedup:.2f}x {'faster' if speedup > 1 else 'slower'} than MCMC")
+    print(f"MCP speedup: {speedup:.2f}x {'faster' if speedup > 1 else 'slower'} than MCMC")
     print("=" * 50)
 
 
