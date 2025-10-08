@@ -78,7 +78,7 @@ def iohmm_dlfm(num_samples, features, observations, labels):
     assert m == num_samples, f"trial number mismatch {m} != {num_samples}"
 
     # Hyperparameters
-    eps = 1e-6  # float: termination criterion
+    eps = 1e-5  # float: termination criterion
 
     # P-problem
     # K = 3
@@ -120,15 +120,47 @@ def iohmm_dlfm(num_samples, features, observations, labels):
             ztil.value = np.random.dirichlet(np.ones(K), size=m)
         else:
             ztil.value = np.abs(z.value)
-        Pprob.solve(reduced_tol_gap_abs=5e-4, reduced_tol_gap_rel=5e-4)
+        # Pprob.solve(reduced_tol_gap_abs=5e-4, reduced_tol_gap_rel=5e-4)
+        try:
+            Pprob.solve(
+                solver=cp.CLARABEL, 
+                max_iter=1000, 
+                tol_gap_abs=eps*0.1,
+                tol_gap_rel=eps*0.1,
+                reduced_tol_gap_abs=eps, 
+                reduced_tol_gap_rel=eps
+            )
+        except cp.SolverError:
+            try:
+                Pprob.solve(solver=cp.SCS, max_iters=5000, eps=eps*0.1, normalize=True)
+                print(f"Iteration {i}: <solver=SCS> P-problem value: {Pobj.value}.")
+            except cp.SolverError:
+                print(f"Iteration {i}: F-problem failed to solve.")
+                continue
 
         rtil.value = cp.vstack(r).value
         # Fprob.solve()
-        Fprob.solve(reduced_tol_gap_abs=5e-4, reduced_tol_gap_rel=5e-4)
+        # Fprob.solve(reduced_tol_gap_abs=5e-4, reduced_tol_gap_rel=5e-4)
+        try:
+            Fprob.solve(
+                solver=cp.CLARABEL, 
+                max_iter=1000, 
+                tol_gap_abs=eps*0.1,
+                tol_gap_rel=eps*0.1,
+                reduced_tol_gap_abs=eps, 
+                reduced_tol_gap_rel=eps
+            )
+        except cp.SolverError:
+            try:
+                Fprob.solve(solver=cp.SCS, max_iters=5000, eps=eps*0.1, normalize=True)
+                print(f"Iteration {i}: <solver=SCS> F-problem value: {Fobj.value}.")
+            except cp.SolverError:
+                print(f"Iteration {i}: F-problem failed to solve.")
+                continue
 
-        print(f"Iteration {i}: P-problem value: {Pobj.value}, F-problem value: {Fobj.value}, gap: {np.abs(Pobj.value - Fobj.value)}.")
-        if np.abs(Pobj.value - Fobj.value) < eps or i > 300:
+        if np.abs(Pobj.value - Fobj.value) < eps or i > 150:
             break
+    print(f"Samples{num_samples} Iteration {i}: P-problem value: {Pobj.value}, F-problem value: {Fobj.value}, gap: {np.abs(Pobj.value - Fobj.value)}.")
 
     perm = find_permutation(labels, np.argmax(z.value, axis=-1), K, K)
     thetas_val = np.array([theta.value for theta in thetas])
@@ -190,6 +222,6 @@ def main(seed):
 
 
 if __name__ == "__main__":
-    seed = 0
+    seed = 1
     np.random.seed(seed)
     main(seed)

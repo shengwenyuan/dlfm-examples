@@ -32,14 +32,15 @@ input_dim = 2         # input dimensions
 num_trials = 997
 init_trials = 100
 
-num_repeats = 1
+seed_list = [0, 1]
+num_repeats = len(seed_list)
 num_gibbs_samples = 4000
 
 # * * * * groundtruth HMM for generation * * * * * *
 true_iohmm = ssm.HMM(num_states, obs_dim, input_dim, observations="input_driven_obs", 
                    observation_kwargs=dict(C=num_categories), transitions="standard")
 gen_weights = np.array([[[6, 1]], [[2, -3]], [[2, 3]]])
-gen_log_trans_mat = np.log(np.array([[[0.98, 0.01, 0.01], [0.05, 0.92, 0.03], [0.02, 0.03, 0.94]]]))
+gen_log_trans_mat = np.log(np.array([[[0.98, 0.01, 0.01], [0.05, 0.92, 0.03], [0.02, 0.03, 0.95]]]))
 true_iohmm.observations.params = gen_weights
 true_iohmm.transitions.params = gen_log_trans_mat
 gen_trans_mat = np.exp(gen_log_trans_mat)[0]
@@ -50,7 +51,7 @@ def plot_rmse_w():
 
     # Plotting error in weights
     error=[]
-    for seed in np.arange(num_repeats):
+    for seed in seed_list:
         error_in_weights_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", "dlfm_errorinweights_atseed"+str(seed)+".npy"))
         error_in_weights_dlfm = np.convolve(error_in_weights_dlfm, np.ones(5)/5, mode='valid')
         error += error_in_weights_dlfm.tolist()
@@ -65,10 +66,11 @@ def plot_rmse_w():
     weights_list = {"trial \#": trials, "Method": sampling_method, "RMSE ($\{w_k\}_{k=1}^K$)": error}
     df = pd.DataFrame(weights_list, columns=['trial \#', 'Method', 'RMSE ($\{w_k\}_{k=1}^K$)'])
     fig, ax = plt.subplots(figsize=(5, 5))
-    sns.lineplot(x="trial \#", y="RMSE ($\{w_k\}_{k=1}^K$)", hue="Method", data=df, ax=ax, palette=cols_traces, linewidth=2, alpha=0.8)
+    sns.lineplot(x="trial \#", y="RMSE ($\{w_k\}_{k=1}^K$)", hue="Method", data=df, ax=ax, palette=cols_traces, linewidth=2, alpha=0.8, errorbar=('ci', 68))
     handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles=handles, labels=labels)
-    ax.get_legend().remove()
+    # Update method names for better display
+    updated_labels = ['DLFM' if label == 'dlfm' else 'MCMC' if label == 'random' else label for label in labels]
+    ax.legend(handles=handles, labels=updated_labels, loc='upper right')
     plt.xticks()
     plt.yticks()
     plt.tight_layout()
@@ -83,7 +85,7 @@ def plot_rmse_p():
 
     # Plotting error in weights
     error=[]
-    for seed in np.arange(num_repeats):
+    for seed in seed_list:
         error_in_ps_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", "dlfm_errorinPs_atseed"+str(seed)+".npy"))
         error_in_ps_dlfm = np.convolve(error_in_ps_dlfm, np.ones(5)/5, mode='valid')
         error += error_in_ps_dlfm.tolist()
@@ -98,10 +100,11 @@ def plot_rmse_p():
     weights_list = {"trial \#": trials, "Method": sampling_method, "RMSE (A)": error}
     df = pd.DataFrame(weights_list, columns=['trial \#', 'Method', 'RMSE (A)'])
     fig, ax = plt.subplots(figsize=(5, 5))
-    sns.lineplot(x="trial \#", y="RMSE (A)", hue="Method", data=df, ax=ax, palette=cols_traces, linewidth=2, alpha=0.8)
+    sns.lineplot(x="trial \#", y="RMSE (A)", hue="Method", data=df, ax=ax, palette=cols_traces, linewidth=2, alpha=0.8, errorbar=('ci', 68))
     handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles=handles, labels=labels)
-    ax.get_legend().remove()
+    # Update method names for better display
+    updated_labels = ['DLFM' if label == 'dlfm' else 'MCMC' if label == 'random' else label for label in labels]
+    ax.legend(handles=handles, labels=updated_labels, loc='upper right')
     plt.xticks()
     plt.yticks()
     plt.tight_layout()
@@ -110,9 +113,7 @@ def plot_rmse_p():
     plt.savefig(os.path.join(graph_dir, f"rmse_Ps_{num_trials}.png"), dpi=400)
 
 
-def plot_input_selection():
-    seed = 0
-    
+def plot_input_selection(seed=0):
     selected_inputs_mcmc = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_selectedinputs_atseed{seed}_gibbs_{num_gibbs_samples}.npy"))
     selected_inputs_dlfm = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_selectedinputs_atseed{seed}.npy"))
     selected_inputs_mcmc = np.array(selected_inputs_mcmc)[:, 0]
@@ -151,13 +152,6 @@ def plot_input_selection():
 
 
 def print_total_times():
-    # for seed in range(num_repeats):
-    #     print(f"\nSeed {seed}:")
-    #     mcmc_time = np.load(os.path.join(npy_dir, "mcmc", "1001", f"random_gibbs_PG_total_time_atseed{seed}_gibbs_{num_gibbs_samples}.npy"))
-    #     print(f"  MCMC: {mcmc_time:.2f} seconds ({mcmc_time/60:.2f} minutes)")
-    #     dlfm_time = np.load(os.path.join(npy_dir, "dlfm", "1001", f"dlfm_total_time_atseed{seed}.npy"))
-    #     print(f"  DLFM: {dlfm_time:.2f} seconds ({dlfm_time/60:.2f} minutes)")
-    
     mcmc_times = []
     dlfm_times = []
     

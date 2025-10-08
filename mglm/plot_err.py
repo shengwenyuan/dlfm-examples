@@ -11,6 +11,7 @@ mpl.rcParams['text.usetex'] = True
 mpl.rcParams['mathtext.fontset'] = 'cm'
 mpl.rcParams['font.family'] = ['sans-serif']
 cols_traces = ['#BE1F24', '#2E3192']
+# cols_traces = ['#2E3192', '#BE1F24']
 
 # * * * * * * os dirs * * * * * *
 root = os.path.dirname(os.path.abspath(__file__))
@@ -56,10 +57,11 @@ def plot_rmse_w():
     weights_list = {"trial \#": trials, "Method": sampling_method, "RMSE ($\{w_k\}_{k=1}^K$)": error}
     df = pd.DataFrame(weights_list, columns=['trial \#', 'Method', 'RMSE ($\{w_k\}_{k=1}^K$)'])
     fig, ax = plt.subplots(figsize=(5, 5))
-    sns.lineplot(x="trial \#", y="RMSE ($\{w_k\}_{k=1}^K$)", hue="Method", data=df, ax=ax, palette=cols_traces, linewidth=2, alpha=0.8)
+    sns.lineplot(x="trial \#", y="RMSE ($\{w_k\}_{k=1}^K$)", hue="Method", data=df, ax=ax, palette=cols_traces, linewidth=2, alpha=0.8, errorbar=('ci', 68))
     handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles=handles, labels=labels)
-    ax.get_legend().remove()
+    # Update method names for better display
+    updated_labels = ['DLFM' if label == 'dlfm' else 'MCMC' if label == 'random' else label for label in labels]
+    ax.legend(handles=handles, labels=updated_labels, loc='upper right')
     plt.xticks()
     plt.yticks()
     plt.tight_layout()
@@ -86,10 +88,11 @@ def plot_rmse_pi():
     weights_list = {"trial \#": trials, "Method": sampling_method, "RMSE (A)": error}
     df = pd.DataFrame(weights_list, columns=['trial \#', 'Method', 'RMSE (A)'])
     fig, ax = plt.subplots(figsize=(5, 5))
-    sns.lineplot(x="trial \#", y="RMSE (A)", hue="Method", data=df, ax=ax, palette=cols_traces, linewidth=2, alpha=0.8)
+    sns.lineplot(x="trial \#", y="RMSE (A)", hue="Method", data=df, ax=ax, palette=cols_traces, linewidth=2, alpha=0.8, errorbar=('ci', 68))
     handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles=handles, labels=labels)
-    ax.get_legend().remove()
+    # Update method names for better display
+    updated_labels = ['DLFM' if label == 'dlfm' else 'MCMC' if label == 'random' else label for label in labels]
+    ax.legend(handles=handles, labels=updated_labels, loc='upper right')
     plt.xticks()
     plt.yticks()
     plt.tight_layout()

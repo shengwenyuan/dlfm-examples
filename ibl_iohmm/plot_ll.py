@@ -10,7 +10,7 @@ sns.set_theme(style='ticks', font_scale=1.5)
 mpl.rcParams['text.usetex'] = False  # Set to False to avoid LaTeX issues
 mpl.rcParams['mathtext.fontset'] = 'cm'
 mpl.rcParams['font.family'] = ['sans-serif']
-cols_traces = ['#BE1F24', '#2E3192', '#1f77b4', '#ff7f0e', '#2ca02c']
+cols_traces = ['#2E3192', '#BE1F24', '#1f77b4', '#ff7f0e', '#2ca02c']
 
 root = os.path.dirname(os.path.abspath(__file__))
 ibl_dir = os.path.join(root, "output", "results_IOHMM")
@@ -29,7 +29,7 @@ n_folds = 3
 mcmc_downsample_step = 1
 num_gibbs_samples = 2000
 # seed_list = [0, 1, 2, 3]
-seed_list = [0]
+seed_list = [0, 1, 2]
 num_repeats = len(seed_list)
 
 def load_mcmc_data_all_seeds():
@@ -38,6 +38,7 @@ def load_mcmc_data_all_seeds():
     all_data = []
     
     for seed in seed_list:
+        # if seed==1: seed = 2
         for fold in range(n_folds):
             fold_dir = os.path.join(mcmc_dir, f"fold_{fold}")
             ll_file = os.path.join(fold_dir, f"ibl_gibbs_PG_LL_atseed{seed}_gibbs_{num_gibbs_samples}.npy")
@@ -168,17 +169,17 @@ def plot_comprehensive_comparison():
     fig, ax = plt.subplots(figsize=(10, 6))
     if dlfm_data and mcmc_data:
         sns.lineplot(x="trial #", y="Relative Log-Likelihood", hue="Method", 
-                    data=df, ax=ax, palette=cols_traces[:2], linewidth=2, alpha=0.8)
+                    data=df, ax=ax, palette=cols_traces[:2], linewidth=2, alpha=0.8, errorbar=('ci', 68))
         # ax.set_title('Log-Likelihood Comparison')
     elif mcmc_data:
         sns.lineplot(x="trial #", y="Relative Log-Likelihood", 
                     data=df[df['Method'] == 'MCMC'], ax=ax, 
-                    color=cols_traces[1], linewidth=2, alpha=0.8, label='MCMC')
+                    color=cols_traces[1], linewidth=2, alpha=0.8, label='MCMC', errorbar=('ci', 68))
         ax.set_title('MCMC Log-Likelihood')
     elif dlfm_data:
         sns.lineplot(x="trial #", y="Relative Log-Likelihood", 
                     data=df[df['Method'] == 'DLFM'], ax=ax, 
-                    color=cols_traces[0], linewidth=2, alpha=0.8, label='DLFM')
+                    color=cols_traces[0], linewidth=2, alpha=0.8, label='DLFM', errorbar=('ci', 68))
         ax.set_title('DLFM Log-Likelihood')
     
     ax.set_xlabel('Trial #')
